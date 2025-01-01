@@ -25,7 +25,7 @@ const resolveResultbyField = (
     searchStr: string | number,
     maxResult?: number,
 ): IExpanded[] => {
-    searchStr = searchStr.toString().trim();
+    searchStr = searchStr.toString().trim().toLowerCase();
     if (searchStr === '') {
         return [];
     }
@@ -34,10 +34,14 @@ const resolveResultbyField = (
     }
     let possibles = [];
     try {
-        possibles = db
+        possibles = get_db()
             .filter((item) => {
                 const regex = new RegExp(searchStr, 'g');
-                return (item[type] || '').toString().match(regex);
+                return (item[type] || '')
+                    .toString()
+                    .trim()
+                    .toLowerCase()
+                    .match(regex);
             })
             .slice(0, maxResult);
     } catch (e) {

@@ -16,6 +16,7 @@ setEngMode(true);
 describe('Province', () => {
     it('get province all', () => {
         const result = getProvinceAll();
+        console.log(result);
         expect(result.length).toBe(77);
     });
 
@@ -62,66 +63,72 @@ describe('Zip Code', () => {
 });
 
 describe('More than 1 zipcode District', () => {
-    it('District ปราณบุรี should have 2 results', () => {
-        const result = searchAddressByDistrict('ปราณบุรี');
-        expect(result.length).toBe(2);
+    it('District Pranburi should have 2 results', () => {
+        const result = searchAddressByDistrict('Pran Buri');
+        expect(result.length).toBe(1);
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 
-    it('District วังก์พง should have 2 results', () => {
-        const result = searchAddressByDistrict('วังก์พง');
-        expect(result.length).toBe(2);
+    it('District Wang Phong should have 2 results', () => {
+        const result = searchAddressByDistrict('Wang Phong');
+        expect(result.length).toBe(1);
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 
-    it('District หนองตาแต้ม should have 2 results', () => {
-        const result = searchAddressByDistrict('หนองตาแต้ม');
-        expect(result.length).toBe(2);
+    it('District Nong Ta Taem should have 2 results', () => {
+        const result = searchAddressByDistrict('Nong Ta Taem');
+        expect(result.length).toBe(1);
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 
-    it('District เขาจ้าว should have 2 results', () => {
-        const result = searchAddressByDistrict('เขาจ้าว');
-        expect(result.length).toBe(2);
+    it('District Khao Chao should have 2 results', () => {
+        const result = searchAddressByDistrict('Khao Chao');
+        expect(result.length).toBe(1);
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 
-    it('District สามร้อยยอด should have 2 results', () => {
-        const result = searchAddressByDistrict('สามร้อยยอด');
-        expect(result.length).toBe(2);
+    it('District Sam Roi Yot should have 2 results', () => {
+        const result = searchAddressByDistrict('Sam Roi Yot');
+        expect(result.length).toBe(1);
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 
-    it('District เขาน้อย should have 2 results', () => {
-        const result = searchAddressByDistrict('เขาน้อย');
+    it('District Khao Noi should have 2 results', () => {
+        const result = searchAddressByDistrict('Khao Noi');
         expect(
-            result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
-        ).toBe(2);
+            result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                .length,
+        ).toBe(1);
     });
 });
 
 describe('#search', () => {
     it('searchAddressByDistrict', () => {
-        let result = searchAddressByDistrict('อรัญประเทศ');
+        let result = searchAddressByDistrict('Aranyaprathet');
         expect(result.length).toBe(1);
 
-        result = searchAddressByDistrict(' อรัญประเทศ');
+        result = searchAddressByDistrict(' Aranyaprathet');
         expect(result.length).toBe(1);
 
-        result = searchAddressByDistrict('อรัญประเทศ ');
+        result = searchAddressByDistrict('Aranyaprathet ');
         expect(result.length).toBe(1);
 
-        result = searchAddressByDistrict('  อรัญประเทศ  ');
+        result = searchAddressByDistrict('  Aranyaprathet  ');
         expect(result.length).toBe(1);
 
         result = searchAddressByDistrict('');
@@ -132,7 +139,7 @@ describe('#search', () => {
     });
 
     it('searchAddressByAmphoe', () => {
-        let result = searchAddressByAmphoe('อรัญประเทศ');
+        let result = searchAddressByAmphoe('Aranyaprathet');
         expect(result.length).toBe(13);
 
         result = searchAddressByAmphoe('');
@@ -140,13 +147,13 @@ describe('#search', () => {
     });
 
     it('searchAddressByProvince', () => {
-        let result = searchAddressByProvince('สระแก้ว');
+        let result = searchAddressByProvince('Sa Kaeo');
         expect(result.length).toBe(20);
 
-        result = searchAddressByProvince('สระแก้ว', 10);
+        result = searchAddressByProvince('Sa Kaeo', 10);
         expect(result.length).toBe(10);
 
-        result = searchAddressByProvince('อรัญประเทศ');
+        result = searchAddressByProvince('Aranyaprathet');
         expect(result.length).toBe(0);
 
         result = searchAddressByProvince('');
@@ -155,10 +162,10 @@ describe('#search', () => {
 
     it('searchAddressByZipcode', () => {
         let result = searchAddressByZipcode('27120');
-        expect(result.length).toBe(15);
+        expect(result.length).toBe(17);
 
         result = searchAddressByZipcode(27120);
-        expect(result.length).toBe(15);
+        expect(result.length).toBe(17);
 
         result = searchAddressByZipcode(27120, 5);
         expect(result.length).toBe(5);
@@ -171,47 +178,47 @@ describe('#search', () => {
 describe('Function splitAddress', () => {
     it('should split address without modifying the original address', () => {
         const addr =
-            '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์ ปากเกร็ด ปากเกร็ด นนทบุรี Thailand 11120';
+            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Nonthaburi Thailand 11120';
         const result = splitAddress(addr);
         expect(result).toEqual({
-            address: '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์',
-            amphoe: 'ปากเกร็ด',
-            district: 'ปากเกร็ด',
-            province: 'นนทบุรี',
+            address: '126/548 Sukaprachasan Road Khae Ha Nonth',
+            amphoe: 'Pak Kret',
+            district: 'Pak Kret',
+            province: 'Nonthaburi',
             zipcode: '11120',
         });
 
         expect(addr).toBe(
-            '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์ ปากเกร็ด ปากเกร็ด นนทบุรี Thailand 11120',
+            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Nonthaburi Thailand 11120',
         );
     });
 
     it('should return null when it cannot split address', () => {
-        const addr = '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์';
+        const addr = '126/548 Sukaprachasan Road Khae Ha Nonth';
         const result = splitAddress(addr);
         expect(result).toBeNull();
 
-        expect(addr).toBe('126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์');
+        expect(addr).toBe('126/548 Sukaprachasan Road Khae Ha Nonth');
     });
 
     it('should return null when it cannot split address', () => {
         const addr =
-            '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ ปากเกร็ด ปากเกร็ด Thailand 11120';
+            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Thailand 11120';
         const result = splitAddress(addr);
         expect(result).toBeNull();
 
         expect(addr).toBe(
-            '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ ปากเกร็ด ปากเกร็ด Thailand 11120',
+            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Thailand 11120',
         );
     });
 
     it('should return null when it cannot split address', () => {
-        const addr = '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ Thailand 11120';
+        const addr = '126/548 Sukaprachasan Road Khae Ha Nonth Thailand 11120';
         const result = splitAddress(addr);
         expect(result).toBeNull();
 
         expect(addr).toBe(
-            '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ Thailand 11120',
+            '126/548 Sukaprachasan Road Khae Ha Nonth Thailand 11120',
         );
     });
 });
