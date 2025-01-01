@@ -9,6 +9,10 @@
     "module": "dist/thai-address-universal.esm.js",
     "browser": "dist/thai-address-universal.umd.js",
     "types": "dist/types/index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ophoomo/thai-address-universal.git"
+    },
     "keywords": [
         "thai-address"
     ],
