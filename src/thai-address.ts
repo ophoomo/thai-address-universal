@@ -13,6 +13,9 @@ const db = preprocess(thaiDB);
 const dbEng = preprocess(engDB, true);
 let engMode = false;
 
+let provinceThaiAllCache: string[] = [];
+let provinceEngAllCache: string[] = [];
+
 const get_db = (): IExpanded[] => {
     return engMode ? dbEng : db;
 };
@@ -48,11 +51,23 @@ export const setEngMode = (status: boolean): void => {
 };
 
 export const getProvinceAll = (): string[] => {
-    const provinceSet = new Set<string>();
-    get_db().forEach((item) => {
-        provinceSet.add(item.province);
-    });
-    return Array.from(provinceSet);
+    let cache = engMode ? provinceEngAllCache : provinceThaiAllCache;
+
+    if (cache.length === 0) {
+        const provinceSet = new Set<string>();
+        get_db().forEach((item) => {
+            provinceSet.add(item.province);
+        });
+        if (engMode) {
+            provinceEngAllCache = Array.from(provinceSet);
+            cache = provinceEngAllCache;
+        } else {
+            provinceThaiAllCache = Array.from(provinceSet);
+            cache = provinceThaiAllCache;
+        }
+    }
+
+    return cache;
 };
 
 export const getAmphoeByProvince = (province: string): string[] => {

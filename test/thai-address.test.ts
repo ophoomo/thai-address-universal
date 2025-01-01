@@ -7,8 +7,11 @@ import {
     searchAddressByDistrict,
     searchAddressByProvince,
     searchAddressByZipcode,
+    setEngMode,
     splitAddress,
 } from '../src/thai-address';
+
+setEngMode(false);
 
 describe('Province', () => {
     it('get province all', () => {
