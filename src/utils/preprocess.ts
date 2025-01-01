@@ -1,6 +1,6 @@
 import { IExpanded, IThaiAddress } from '../types';
 
-export const preprocess = (data: IThaiAddress): IExpanded[] => {
+export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
     let lookup: string[] = [];
     let words: string[] = [];
     let expanded: IExpanded[] = [];
@@ -17,7 +17,11 @@ export const preprocess = (data: IThaiAddress): IExpanded[] => {
     const t = (text: string | number): string => {
         function repl(m: string): string {
             const ch = m.charCodeAt(0);
-            return words[ch < 97 ? ch - 65 : 26 + ch - 97];
+            if (eng) {
+                return words[ch - 3585];
+            } else {
+                return words[ch < 97 ? ch - 65 : 26 + ch - 97];
+            }
         }
         if (!useLookup) {
             return text.toString();
@@ -25,7 +29,11 @@ export const preprocess = (data: IThaiAddress): IExpanded[] => {
         if (typeof text === 'number') {
             text = lookup[text];
         }
-        return text.toString().replace(/[A-Z]/gi, repl);
+        if (eng) {
+            return text.replace(/[ก-ฮ]/gi, repl);
+        } else {
+            return text.toString().replace(/[A-Z]/gi, repl);
+        }
     };
 
     if (!data.data.length) {

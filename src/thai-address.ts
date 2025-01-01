@@ -1,4 +1,5 @@
 import thaiDB from '../database/db.json';
+import engDB from '../database/eng_db.json';
 import { IExpanded, IExpandedWithPoint } from './types';
 import { preprocess } from './utils/preprocess';
 
@@ -9,6 +10,12 @@ import {
 } from './utils/split-address';
 
 const db = preprocess(thaiDB);
+const dbEng = preprocess(engDB, true);
+let engMode = false;
+
+const get_db = (): IExpanded[] => {
+    return engMode ? dbEng : db;
+};
 
 const resolveResultbyField = (
     type: keyof IExpanded,
@@ -36,9 +43,13 @@ const resolveResultbyField = (
     return possibles;
 };
 
+export const setEngMode = (status: boolean): void => {
+    engMode = status;
+};
+
 export const getProvinceAll = (): string[] => {
     const provinceSet = new Set<string>();
-    db.forEach((item) => {
+    get_db().forEach((item) => {
         provinceSet.add(item.province);
     });
     return Array.from(provinceSet);
@@ -46,7 +57,7 @@ export const getProvinceAll = (): string[] => {
 
 export const getAmphoeByProvince = (province: string): string[] => {
     const amphoeSet = new Set<string>();
-    db.forEach((item) => {
+    get_db().forEach((item) => {
         if (item.province === province) {
             amphoeSet.add(item.amphoe);
         }
@@ -56,7 +67,7 @@ export const getAmphoeByProvince = (province: string): string[] => {
 
 export const getDistrictByAmphoe = (amphoe: string): string[] => {
     const districtSet = new Set<string>();
-    db.forEach((item) => {
+    get_db().forEach((item) => {
         if (item.amphoe === amphoe) {
             districtSet.add(item.district);
         }
@@ -66,7 +77,7 @@ export const getDistrictByAmphoe = (amphoe: string): string[] => {
 
 export const getZipCodeByDistrict = (district: string): string[] => {
     const zipCodeSet = new Set<string>();
-    db.forEach((item) => {
+    get_db().forEach((item) => {
         if (item.district === district) {
             zipCodeSet.add(item.zipcode);
         }

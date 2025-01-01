@@ -8,6 +8,7 @@ export {
     getAmphoeByProvince,
     getDistrictByAmphoe,
     getZipCodeByDistrict,
+    setEngMode,
 } from './thai-address';
 
 export { IExpanded } from './types';

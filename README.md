@@ -4,6 +4,8 @@ Thai Address Universal is a library developed from [thai-address-database](https
 
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
+In this project, we have utilized data from the Thai transliteration database provided by [Bangmod.Cloud](https://github.com/bangmodcloud/thai-address-database), which plays a crucial role in the development of this project. I would like to express my sincere gratitude to [Bangmod.Cloud](https://bangmod.cloud/) for their generous contribution of time and resources in creating this dataset. Their support has been invaluable.
+
 ## 🛠️Installation
 
 ```bash
@@ -11,6 +13,10 @@ npm install thai-address-universal --save
 ```
 
 ## ✨Features
+
+```javascript
+setEngMode(status: boolean): void
+```
 
 ```javascript
 getProvinceAll(): string[]
