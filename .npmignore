@@ -2,6 +2,7 @@
 .gitignore
 .github
 .prettierrc
+.prettierignore
 .eslintrc.js
 .eslint.json
 .swc.cjs.swcrc
@@ -39,6 +40,9 @@ tsconfig.dts.json
 tsconfig.esm.json
 tsconfig.test.json
 tsconfig.test.tsbuildinfo
+
+.pre-commit-config.yaml
+jest.config.mjs
 
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
