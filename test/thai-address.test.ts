@@ -205,7 +205,6 @@ describe('Function splitAddress', () => {
     it('should return null when it cannot split address', () => {
         const addr = '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ Thailand 11120';
         const result = splitAddress(addr);
-        console.log(result);
         expect(result).toBeNull();
 
         expect(addr).toBe(
