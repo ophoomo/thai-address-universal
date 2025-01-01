@@ -13,19 +13,35 @@ npm install thai-address-universal --save
 ## ✨Features
 
 ```javascript
-searchAddressByDistrict( searchStr: string, maxResult?: number): IExpanded[]
+getProvinceAll(): string[]
 ```
 
 ```javascript
-searchAddressByAmphoe ( searchStr: string, maxResult?: number): IExpanded[]
+getAmphoeByProvince (province: string): string[]
 ```
 
 ```javascript
-searchAddressByProvince ( searchStr: string, maxResult?: number): IExpanded[]
+getDistrictByAmphoe (amphoe: string): string[]
 ```
 
 ```javascript
-searchAddressByZipcode ( searchStr: string | number, maxResult?: number): IExpanded[]
+getZipCodeByDistrict (district: string): string[]
+```
+
+```javascript
+searchAddressByDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```
+
+```javascript
+searchAddressByAmphoe (searchStr: string, maxResult?: number): IExpanded[]
+```
+
+```javascript
+searchAddressByProvince (searchStr: string, maxResult?: number): IExpanded[]
+```
+
+```javascript
+searchAddressByZipcode (searchStr: string | number, maxResult?: number): IExpanded[]
 ```
 
 ```javascript

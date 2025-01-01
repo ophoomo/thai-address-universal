@@ -1,6 +1,6 @@
 {
     "name": "thai-address-universal",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Thai Address Universal is a TypeScript-based library derived from thai-address-database, offering improved performance and accurate type-checking for handling Thai address data.",
     "license": "ISC",
     "author": {
@@ -15,7 +15,7 @@
     "types": "dist/types/index.d.ts",
     "repository": {
         "type": "git",
-        "url": "https://github.com/ophoomo/thai-address-universal"
+        "url": "git+https://github.com/ophoomo/thai-address-universal.git"
     },
     "bugs": "https://github.com/ophoomo/thai-address-universal/issues",
     "homepage": "https://github.com/ophoomo/thai-address-universal",

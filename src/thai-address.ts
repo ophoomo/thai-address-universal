@@ -36,6 +36,44 @@ const resolveResultbyField = (
     return possibles;
 };
 
+export const getProvinceAll = (): string[] => {
+    const provinceSet = new Set<string>();
+    db.forEach((item) => {
+        provinceSet.add(item.province);
+    });
+    return Array.from(provinceSet);
+};
+
+export const getAmphoeByProvince = (province: string): string[] => {
+    const amphoeSet = new Set<string>();
+    db.forEach((item) => {
+        if (item.province === province) {
+            amphoeSet.add(item.amphoe);
+        }
+    });
+    return Array.from(amphoeSet);
+};
+
+export const getDistrictByAmphoe = (amphoe: string): string[] => {
+    const districtSet = new Set<string>();
+    db.forEach((item) => {
+        if (item.amphoe === amphoe) {
+            districtSet.add(item.district);
+        }
+    });
+    return Array.from(districtSet);
+};
+
+export const getZipCodeByDistrict = (district: string): string[] => {
+    const zipCodeSet = new Set<string>();
+    db.forEach((item) => {
+        if (item.district === district) {
+            zipCodeSet.add(item.zipcode);
+        }
+    });
+    return Array.from(zipCodeSet);
+};
+
 export const searchAddressByDistrict = (
     searchStr: string,
     maxResult?: number,

@@ -1,10 +1,62 @@
 import {
+    getAmphoeByProvince,
+    getDistrictByAmphoe,
+    getProvinceAll,
+    getZipCodeByDistrict,
     searchAddressByAmphoe,
     searchAddressByDistrict,
     searchAddressByProvince,
     searchAddressByZipcode,
     splitAddress,
 } from '../src/thai-address';
+
+describe('Province', () => {
+    it('get province all', () => {
+        const result = getProvinceAll();
+        expect(result.length).toBe(77);
+    });
+
+    it('should be result not null when call function', () => {
+        const result = getProvinceAll();
+        expect(result).not.toBeNull();
+    });
+});
+
+describe('Amphoe', () => {
+    it('get amphoe with parameter', () => {
+        const result = getAmphoeByProvince('สระบุรี');
+        expect(result.length).toBe(13);
+    });
+
+    it('should be [] when parameter is empty', () => {
+        const result = getAmphoeByProvince('');
+        expect(result.length).toBe(0);
+    });
+});
+
+describe('District', () => {
+    it('get district with parameter', () => {
+        const result = getDistrictByAmphoe('มวกเหล็ก');
+        expect(result.length).toBe(6);
+    });
+
+    it('should be [] when parameter is empty', () => {
+        const result = getDistrictByAmphoe('');
+        expect(result.length).toBe(0);
+    });
+});
+
+describe('Zip Code', () => {
+    it('get zip code with parameter', () => {
+        const result = getZipCodeByDistrict('ท่าตะเกียบ');
+        expect(result.length).toBe(1);
+    });
+
+    it('should be [] when parameter is empty', () => {
+        const result = getZipCodeByDistrict('');
+        expect(result.length).toBe(0);
+    });
+});
 
 describe('More than 1 zipcode District', () => {
     it('District ปราณบุรี should have 2 results', () => {
