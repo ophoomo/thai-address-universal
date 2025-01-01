@@ -22,15 +22,6 @@
     "keywords": [
         "thai-address"
     ],
-    "exports": {
-        ".": {
-            "import": "./dist/thai-address-universal.esm.js",
-            "require": "./dist/thai-address-universal.cjs.js"
-        },
-        "./umd": {
-            "default": "./dist/thai-address-universal.umd.js"
-        }
-    },
     "scripts": {
         "format": "npx prettier --write .",
         "build": "rollup -c",
