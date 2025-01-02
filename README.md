@@ -14,14 +14,13 @@
     </a>
 </p>
 
-
 Thai Address Universal is a library developed from [thai-address-database](https://github.com/Sellsuki/thai-address-database), rewritten to fully support usage with TypeScript 🖥️✨. This allows for efficient use and ensures accurate type-checking ✅.
 
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
 In this project, we have utilized data from the Thai transliteration database provided by [Bangmod.Cloud](https://github.com/bangmodcloud/thai-address-database), which plays a crucial role in the development of this project. I would like to express my sincere gratitude to [Bangmod.Cloud](https://bangmod.cloud/) for their generous contribution of time and resources in creating this dataset. Their support has been invaluable.
 
-## 🛠️Installation
+## 🛠️ Installation
 
 ```bash
 npm install thai-address-universal --save
@@ -30,12 +29,15 @@ npm install thai-address-universal --save
 ```javascript
 <script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
 ```
-## 👨‍💻Example
+
+## 👨‍💻 Example
+
 ```javascript
 import { getProvinceAll } from 'thai-address-universal';
 const provinces = getProvinceAll();
 console.log(provinces);
 ```
+
 ```javascript
 <script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
 <script>
@@ -44,7 +46,7 @@ console.log(provinces);
 </script>
 ```
 
-## ✨Features
+## ✨ Features
 
 ```javascript
 setEngMode(status: boolean): void
@@ -86,7 +88,19 @@ searchAddressByZipcode (searchStr: string | number, maxResult?: number): IExpand
 splitAddress (fullAddress: string): IExpanded
 ```
 
-## 🤝Contact
+## 🙏 Acknowledgements
+
+I would like to extend my deepest thanks to:
+
+- **Sellsuki** [thai-address-database](https://github.com/Sellsuki/thai-address-database)
+
+- **Bangmod Cloud** [thai-address-database](https://github.com/bangmodcloud/thai-address-database)
+
+- **Earthchie** [jquery.Thailand.js](https://github.com/earthchie/jquery.Thailand.js/)
+
+Your contributions, whether big or small, have made this project what it is today. Thank you for your support and inspiration! 🎉
+
+## 🤝 Contact
 
 📧 For questions or support, please reach out to us at [me@thanaphoom.dev](mailto:me@thanaphoom.dev).
 
