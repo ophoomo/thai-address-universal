@@ -1,4 +1,19 @@
-# Thai Address Universal
+<p align="center">
+  <img src="https://github.com/ophoomo/thai-address-universal/raw/master/thai-address-universal.svg" width="100%" />
+</p>
+
+<p align="center">
+    <a href="https://www.npmjs.com/package/thai-address-universal">
+    <img src="https://img.shields.io/npm/v/thai-address-universal" alt="NPM Version">
+    </a>
+    <a href="https://github.com/ophoomo/thai-address-universal/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/ophoomo/thai-address-universal/publish.yaml" alt="GitHub Actions Workflow Status">
+    </a>
+    <a href="https://codecov.io/github/ophoomo/thai-address-universal/graph/badge.svg?token=POBBK8A3FD">
+    <img src="https://codecov.io/github/ophoomo/thai-address-universal/graph/badge.svg?token=POBBK8A3FD" alt="codecov">
+    </a>
+</p>
+
 
 Thai Address Universal is a library developed from [thai-address-database](https://github.com/Sellsuki/thai-address-database), rewritten to fully support usage with TypeScript 🖥️✨. This allows for efficient use and ensures accurate type-checking ✅.
 
@@ -10,6 +25,23 @@ In this project, we have utilized data from the Thai transliteration database pr
 
 ```bash
 npm install thai-address-universal --save
+```
+
+```javascript
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+```
+## 👨‍💻Example
+```javascript
+import { getProvinceAll } from 'thai-address-universal';
+const provinces = getProvinceAll();
+console.log(provinces);
+```
+```javascript
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+<script>
+  const provinces = ThaiAddressUniversal.getProvinceAll();
+  console.log(provinces);
+</script>
 ```
 
 ## ✨Features
