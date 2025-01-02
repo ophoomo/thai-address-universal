@@ -16,7 +16,6 @@ setEngMode(true);
 describe('Province', () => {
     it('get province all', () => {
         const result = getProvinceAll();
-        console.log(result);
         expect(result.length).toBe(77);
     });
 

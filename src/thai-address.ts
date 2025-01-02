@@ -15,6 +15,9 @@ let engMode = false;
 
 let provinceThaiAllCache: string[] = [];
 let provinceEngAllCache: string[] = [];
+let AmphoeCache: Map<string, string[]> = new Map();
+let DistrictCache: Map<string, string[]> = new Map();
+let ZipCodeCache: Map<string, string[]> = new Map();
 
 const get_db = (): IExpanded[] => {
     return engMode ? dbEng : db;
@@ -23,28 +26,25 @@ const get_db = (): IExpanded[] => {
 const resolveResultbyField = (
     type: keyof IExpanded,
     searchStr: string | number,
-    maxResult?: number,
+    maxResult: number = 20,
 ): IExpanded[] => {
     searchStr = searchStr.toString().trim().toLowerCase();
     if (searchStr === '') {
         return [];
     }
-    if (!maxResult) {
-        maxResult = 20;
-    }
-    let possibles = [];
+    let possibles: IExpanded[] = [];
     try {
         possibles = get_db()
             .filter((item) => {
-                const regex = new RegExp(searchStr, 'g');
                 return (item[type] || '')
                     .toString()
                     .trim()
                     .toLowerCase()
-                    .match(regex);
+                    .includes(searchStr);
             })
             .slice(0, maxResult);
     } catch (e) {
+        console.error('Error during filtering:', e);
         return [];
     }
     return possibles;
@@ -75,33 +75,48 @@ export const getProvinceAll = (): string[] => {
 };
 
 export const getAmphoeByProvince = (province: string): string[] => {
-    const amphoeSet = new Set<string>();
-    get_db().forEach((item) => {
-        if (item.province === province) {
-            amphoeSet.add(item.amphoe);
-        }
-    });
-    return Array.from(amphoeSet);
+    let data = AmphoeCache.get(province);
+    if (!data || data.length === 0) {
+        const amphoeSet = new Set<string>();
+        get_db().forEach((item) => {
+            if (item.province === province) {
+                amphoeSet.add(item.amphoe);
+            }
+        });
+        data = Array.from(amphoeSet);
+        AmphoeCache.set(province, data);
+    }
+    return data;
 };
 
 export const getDistrictByAmphoe = (amphoe: string): string[] => {
-    const districtSet = new Set<string>();
-    get_db().forEach((item) => {
-        if (item.amphoe === amphoe) {
-            districtSet.add(item.district);
-        }
-    });
-    return Array.from(districtSet);
+    let data = DistrictCache.get(amphoe);
+    if (!data || data.length === 0) {
+        const districtSet = new Set<string>();
+        get_db().forEach((item) => {
+            if (item.amphoe === amphoe) {
+                districtSet.add(item.district);
+            }
+        });
+        data = Array.from(districtSet);
+        DistrictCache.set(amphoe, data);
+    }
+    return data;
 };
 
 export const getZipCodeByDistrict = (district: string): string[] => {
-    const zipCodeSet = new Set<string>();
-    get_db().forEach((item) => {
-        if (item.district === district) {
-            zipCodeSet.add(item.zipcode);
-        }
-    });
-    return Array.from(zipCodeSet);
+    let data = ZipCodeCache.get(district);
+    if (!data || data.length === 0) {
+        const zipCodeSet = new Set<string>();
+        get_db().forEach((item) => {
+            if (item.district === district) {
+                zipCodeSet.add(item.zipcode);
+            }
+        });
+        data = Array.from(zipCodeSet);
+        ZipCodeCache.set(district, data);
+    }
+    return data;
 };
 
 export const searchAddressByDistrict = (
