@@ -1,11 +1,6 @@
-<h1 style="text-align: center;
-           font-size: 40px;
-           font-weight: bold;
-           background: linear-gradient(45deg, #FFD700, #008080);
-           -webkit-background-clip: text;
-           color: transparent;">
-  THAI ADDRESS UNIVERSAL
-</h1>
+<p align="center">
+  <img src="https://github.com/ophoomo/thai-address-universal/raw/master/thai-address-universal.svg" width="100%" />
+</p>
 
 <p align="center">
     <a href="https://www.npmjs.com/package/thai-address-universal">
@@ -30,6 +25,23 @@ In this project, we have utilized data from the Thai transliteration database pr
 
 ```bash
 npm install thai-address-universal --save
+```
+
+```javascript
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+```
+## 👨‍💻Example
+```javascript
+import { getProvinceAll } from 'thai-address-universal';
+const provinces = getProvinceAll();
+console.log(provinces);
+```
+```javascript
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+<script>
+  const provinces = ThaiAddressUniversal.getProvinceAll();
+  console.log(provinces);
+</script>
 ```
 
 ## ✨Features
