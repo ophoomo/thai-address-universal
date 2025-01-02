@@ -1,4 +1,5 @@
 name: Publish Package to npmjs
+
 on:
     release:
         types: [published]
@@ -19,12 +20,16 @@ jobs:
               with:
                   node-version: '22.x'
                   registry-url: 'https://registry.npmjs.org'
+
             - name: Install packages
               run: npm ci
+
             - name: Build Code
               run: npm run build
+
             - name: Test
               run: npm run test
+
             - name: Publish
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

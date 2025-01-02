@@ -1,4 +1,24 @@
-# Thai Address Universal
+<h1 style="text-align: center;
+           font-size: 40px;
+           font-weight: bold;
+           background: linear-gradient(45deg, #FFD700, #008080);
+           -webkit-background-clip: text;
+           color: transparent;">
+  THAI ADDRESS UNIVERSAL
+</h1>
+
+<p align="center">
+    <a href="https://www.npmjs.com/package/thai-address-universal">
+    <img src="https://img.shields.io/npm/v/thai-address-universal" alt="NPM Version">
+    </a>
+    <a href="https://github.com/ophoomo/thai-address-universal/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/ophoomo/thai-address-universal/publish.yaml" alt="GitHub Actions Workflow Status">
+    </a>
+    <a href="https://codecov.io/github/ophoomo/thai-address-universal/graph/badge.svg?token=POBBK8A3FD">
+    <img src="https://codecov.io/github/ophoomo/thai-address-universal/graph/badge.svg?token=POBBK8A3FD" alt="codecov">
+    </a>
+</p>
+
 
 Thai Address Universal is a library developed from [thai-address-database](https://github.com/Sellsuki/thai-address-database), rewritten to fully support usage with TypeScript 🖥️✨. This allows for efficient use and ensures accurate type-checking ✅.
 
