@@ -11,4 +11,4 @@ export {
     setEngMode,
 } from './thai-address';
 
-export { IExpanded } from './types';
+export { IExpanded } from './thai-address.d';

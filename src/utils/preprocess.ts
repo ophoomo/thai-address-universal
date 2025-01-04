@@ -1,17 +1,29 @@
-import { IExpanded, IThaiAddress } from '../types';
+import { IExpanded, IThaiAddress } from '../thai-address.d';
+
+interface IProvince {
+    length: number;
+    [index: number]: string | IAmphoe[];
+}
+
+interface IAmphoe {
+    length: number;
+    [index: number]: string | IDistrict[];
+}
+
+interface IDistrict {
+    length: number;
+    [index: number]: string | string[];
+}
+
 
 export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
-    const expanded: IExpanded[] = [];
-
-    let lookup: string[] = [];
-    let words: string[] = [];
-    let useLookup = false;
-
-    if (data.lookup && data.words) {
-        useLookup = true;
-        lookup = data.lookup.split('|');
-        words = data.words.split('|');
+    if (!data.data.length) {
+        return [];
     }
+
+    const lookup = data.lookup?.split('|') || [];
+    const words = data.words?.split('|') || [];
+    const useLookup = lookup.length > 0 && words.length > 0;
 
     const repl = (m: string): string => {
         const ch = m.charCodeAt(0);
@@ -30,35 +42,27 @@ export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
             : text.toString().replace(/[A-Z]/gi, repl);
     };
 
-    if (!data.data.length) {
-        return expanded;
-    }
-
-    data.data.forEach((provinces: any) => {
+    return data.data.flatMap((provinces: IProvince) => {
         const i = provinces.length === 3 ? 2 : 1;
-        provinces[i].forEach((amphoes: any) => {
-            amphoes[i].forEach((districts: any) => {
-                const districtArray = Array.isArray(districts[i])
-                    ? districts[i]
-                    : [districts[i]];
-                districtArray.forEach((zipcode: any) => {
+        return (provinces[i] as IAmphoe[]).flatMap((amphoes: IAmphoe) => 
+            (amphoes[i] as IDistrict[]).flatMap((districts: IDistrict) => {
+                const districtArray = Array.isArray(districts[i]) ? districts[i] : [districts[i]];
+                return districtArray.map((zipcode: string) => {
                     const entry: IExpanded = {
-                        district: t(districts[0]),
-                        amphoe: t(amphoes[0]),
-                        province: t(provinces[0]),
+                        district: t(districts[0] as string),
+                        amphoe: t(amphoes[0] as string),
+                        province: t(provinces[0] as string),
                         zipcode: zipcode,
                     };
+                    
                     if (i === 2) {
-                        // geographic database
-                        entry.district_code = districts[1];
-                        entry.amphoe_code = amphoes[1];
-                        entry.province_code = provinces[1];
+                        entry.district_code = districts[1] as string;
+                        entry.amphoe_code = amphoes[1] as string;
+                        entry.province_code = provinces[1] as string;
                     }
-                    expanded.push(entry);
+                    return entry;
                 });
-            });
-        });
+            })
+        );
     });
-
-    return expanded;
 };

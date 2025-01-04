@@ -1,8 +1,7 @@
 import thaiDB from '../database/db.json';
 import engDB from '../database/eng_db.json';
-import { IExpanded, IExpandedWithPoint } from './types';
+import { IExpanded, IExpandedWithPoint } from './thai-address.d';
 import { preprocess } from './utils/preprocess';
-
 import {
     cleanupAddress,
     getBestResult,
@@ -13,41 +12,42 @@ const db = preprocess(thaiDB);
 const dbEng = preprocess(engDB, true);
 let engMode = false;
 
-let provinceThaiAllCache: string[] = [];
-let provinceEngAllCache: string[] = [];
-let AmphoeCache: Map<string, string[]> = new Map();
-let DistrictCache: Map<string, string[]> = new Map();
-let ZipCodeCache: Map<string, string[]> = new Map();
+const provinceCache: { [key: string]: string[] } = { thai: [], eng: [] };
+const AmphoeCache: Map<string, string[]> = new Map();
+const DistrictCache: Map<string, string[]> = new Map();
+const ZipCodeCache: Map<string, string[]> = new Map();
 
-const get_db = (): IExpanded[] => {
-    return engMode ? dbEng : db;
+const get_db = (): IExpanded[] => (engMode ? dbEng : db);
+
+const cacheResult = (
+    cache: Map<string, string[]>,
+    key: string,
+    fetchFunc: () => Set<string>
+): string[] => {
+    if (!cache.has(key)) {
+        cache.set(key, Array.from(fetchFunc()));
+    }
+    return cache.get(key) || [];
 };
 
 const resolveResultbyField = (
     type: keyof IExpanded,
     searchStr: string | number,
-    maxResult: number = 20,
+    maxResult: number = 20
 ): IExpanded[] => {
     searchStr = searchStr.toString().trim().toLowerCase();
-    if (searchStr === '') {
-        return [];
-    }
-    let possibles: IExpanded[] = [];
+    if (searchStr === '') return [];
     try {
-        possibles = get_db()
-            .filter((item) => {
-                return (item[type] || '')
-                    .toString()
-                    .trim()
-                    .toLowerCase()
-                    .includes(searchStr);
-            })
+        const db = get_db();
+        return db
+            .filter((item) =>
+                (item[type] || '').toString().trim().toLowerCase().includes(searchStr)
+            )
             .slice(0, maxResult);
     } catch (e) {
         console.error('Error during filtering:', e);
         return [];
     }
-    return possibles;
 };
 
 export const setEngMode = (status: boolean): void => {
@@ -55,104 +55,76 @@ export const setEngMode = (status: boolean): void => {
 };
 
 export const getProvinceAll = (): string[] => {
-    let cache = engMode ? provinceEngAllCache : provinceThaiAllCache;
-
-    if (cache.length === 0) {
+    const cacheKey = engMode ? 'eng' : 'thai';
+    if (provinceCache[cacheKey].length === 0) {
         const provinceSet = new Set<string>();
-        get_db().forEach((item) => {
-            provinceSet.add(item.province);
-        });
-        if (engMode) {
-            provinceEngAllCache = Array.from(provinceSet);
-            cache = provinceEngAllCache;
-        } else {
-            provinceThaiAllCache = Array.from(provinceSet);
-            cache = provinceThaiAllCache;
-        }
+        const db = get_db();
+        db.forEach((item) => provinceSet.add(item.province));
+        provinceCache[cacheKey] = Array.from(provinceSet);
     }
-
-    return cache;
+    return provinceCache[cacheKey];
 };
 
-export const getAmphoeByProvince = (province: string): string[] => {
-    let data = AmphoeCache.get(province);
-    if (!data || data.length === 0) {
+export const getAmphoeByProvince = (province: string): string[] =>
+    cacheResult(AmphoeCache, province, () => {
         const amphoeSet = new Set<string>();
-        get_db().forEach((item) => {
-            if (item.province === province) {
-                amphoeSet.add(item.amphoe);
-            }
+        const db = get_db();
+        db.forEach((item) => {
+            if (item.province === province) amphoeSet.add(item.amphoe);
         });
-        data = Array.from(amphoeSet);
-        AmphoeCache.set(province, data);
-    }
-    return data;
-};
+        return amphoeSet;
+    });
 
-export const getDistrictByAmphoe = (amphoe: string): string[] => {
-    let data = DistrictCache.get(amphoe);
-    if (!data || data.length === 0) {
+export const getDistrictByAmphoe = (amphoe: string): string[] =>
+    cacheResult(DistrictCache, amphoe, () => {
         const districtSet = new Set<string>();
-        get_db().forEach((item) => {
-            if (item.amphoe === amphoe) {
-                districtSet.add(item.district);
-            }
+        const db = get_db();
+        db.forEach((item) => {
+            if (item.amphoe === amphoe) districtSet.add(item.district);
         });
-        data = Array.from(districtSet);
-        DistrictCache.set(amphoe, data);
-    }
-    return data;
-};
+        return districtSet;
+    });
 
-export const getZipCodeByDistrict = (district: string): string[] => {
-    let data = ZipCodeCache.get(district);
-    if (!data || data.length === 0) {
+export const getZipCodeByDistrict = (district: string): string[] =>
+    cacheResult(ZipCodeCache, district, () => {
         const zipCodeSet = new Set<string>();
-        get_db().forEach((item) => {
-            if (item.district === district) {
-                zipCodeSet.add(item.zipcode);
-            }
+        const db = get_db();
+        db.forEach((item) => {
+            if (item.district === district) zipCodeSet.add(item.zipcode);
         });
-        data = Array.from(zipCodeSet);
-        ZipCodeCache.set(district, data);
-    }
-    return data;
-};
+        return zipCodeSet;
+    });
+
+const searchAddressByField = (
+    field: keyof IExpanded,
+    searchStr: string | number,
+    maxResult?: number
+): IExpanded[] => resolveResultbyField(field, searchStr, maxResult);
 
 export const searchAddressByDistrict = (
     searchStr: string,
-    maxResult?: number,
-): IExpanded[] => {
-    return resolveResultbyField('district', searchStr, maxResult);
-};
+    maxResult?: number
+): IExpanded[] => searchAddressByField('district', searchStr, maxResult);
 
 export const searchAddressByAmphoe = (
     searchStr: string,
-    maxResult?: number,
-): IExpanded[] => {
-    return resolveResultbyField('amphoe', searchStr, maxResult);
-};
+    maxResult?: number
+): IExpanded[] => searchAddressByField('amphoe', searchStr, maxResult);
 
 export const searchAddressByProvince = (
     searchStr: string,
-    maxResult?: number,
-): IExpanded[] => {
-    return resolveResultbyField('province', searchStr, maxResult);
-};
+    maxResult?: number
+): IExpanded[] => searchAddressByField('province', searchStr, maxResult);
 
 export const searchAddressByZipcode = (
     searchStr: string | number,
-    maxResult?: number,
-): IExpanded[] => {
-    return resolveResultbyField('zipcode', searchStr, maxResult);
-};
+    maxResult?: number
+): IExpanded[] => searchAddressByField('zipcode', searchStr, maxResult);
 
 export const splitAddress = (fullAddress: string): IExpanded | null => {
     const regex = /\s(\d{5})(\s|$)/gi;
     const regexResult = regex.exec(fullAddress);
-    if (!regexResult) {
-        return null;
-    }
+    if (!regexResult) return null;
     const zip = regexResult[1];
     const address = prepareAddress(fullAddress, zip);
 
