@@ -1,4 +1,4 @@
-import { IExpanded, IThaiAddress } from '../types';
+import { IExpanded, IThaiAddress } from '../thai-address.d';
 
 export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
     const expanded: IExpanded[] = [];
@@ -61,4 +61,15 @@ export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
     });
 
     return expanded;
+};
+
+export const preprocessAddress = (address: string): string => {
+    const replacements = [
+        'Thailand', 'ต.', 'อ.', 'จ.', 'ตำบล', 'อำเภอ', 'จังหวัด', 'แขวง', 'เขต', 'แขวง.', 'เขต.',
+        ' กทม. ', ' กทม ', ' กรุงเทพ '
+    ];
+    replacements.forEach(replacement => {
+        address = address.replace(new RegExp(replacement, 'g'), '');
+    });
+    return address.replace(' กทม ', ' กรุงเทพมหานคร ').trim();
 };

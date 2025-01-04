@@ -1,56 +1,44 @@
-import { IExpanded, IExpandedWithPoint } from '../types';
+import { IExpanded, IExpandedWithPoint } from '../thai-address.d';
 
 export const prepareAddress = (address: string, zip: string): string => {
-    address = address.replace(zip, '');
-    address = address.replace('Thailand', '');
-    address = address.replace('ต.', '');
-    address = address.replace('อ.', '');
-    address = address.replace('จ.', '');
-    address = address.replace('ตำบล', '');
-    address = address.replace('อำเภอ', '');
-    address = address.replace('จังหวัด', '');
-    address = address.replace('แขวง', '');
-    address = address.replace('เขต', '');
-    address = address.replace('แขวง.', '');
-    address = address.replace('เขต.', '');
-    address = address.replace(' กทม. ', ' กรุงเทพมหานคร ');
+    const replacements = [
+        zip, 'Thailand', 'ต.', 'อ.', 'จ.', 'ตำบล', 'อำเภอ', 'จังหวัด', 'แขวง', 'เขต', 'แขวง.', 'เขต.',
+        ' กทม. ', ' กทม ', ' กรุงเทพ '
+    ];
+    replacements.forEach(replacement => {
+        address = address.replace(replacement, '');
+    });
     address = address.replace(' กทม ', ' กรุงเทพมหานคร ');
-    address = address.replace(' กรุงเทพ ', ' กรุงเทพมหานคร ');
-    return address;
+    return address.trim();
 };
+
+const fields: (keyof IExpanded)[] = ['district', 'amphoe', 'province'];
 
 export const calculateMatchPoints = (
     element: IExpandedWithPoint,
     address: string,
 ): number => {
-    const districtMatch = address.includes(element.district);
-    const amphoeMatch = address.includes(element.amphoe);
-    const provinceMatch = address.includes(element.province);
-
-    return [districtMatch, amphoeMatch, provinceMatch].filter(Boolean).length;
+    const matches = fields.filter(field => address.includes(element[field] as string));
+    return matches.length;
 };
 
 export const getBestResult = (
     searchResult: IExpandedWithPoint[],
     address: string,
 ): IExpandedWithPoint | null => {
-    const scoredResults = searchResult.map((element) => {
-        const point = calculateMatchPoints(element, address);
-        return { ...element, point };
-    });
+    const scoredResults = searchResult.map((element) => ({
+        ...element,
+        point: calculateMatchPoints(element, address)
+    }));
 
     scoredResults.sort((a, b) => b.point! - a.point!);
 
-    if (scoredResults[0]?.point === 3) {
-        return scoredResults[0];
-    }
-    return null;
+    return scoredResults[0]?.point === 3 ? scoredResults[0] : null;
 };
 
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    address = address
-        .replace(new RegExp(`\\s${result.district}`, 'g'), '')
-        .replace(new RegExp(`\\s${result.amphoe}|เมือง`, 'g'), '')
-        .replace(new RegExp(`\\s${result.province}`, 'g'), '');
+    fields.forEach(field => {
+        address = address.replace(new RegExp(`\\s${result[field]}`, 'g'), '');
+    });
     return address.trim();
 };
