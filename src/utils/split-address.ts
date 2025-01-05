@@ -2,10 +2,23 @@ import { IExpanded, IExpandedWithPoint } from '../thai-address.d';
 
 export const prepareAddress = (address: string, zip: string): string => {
     const replacements = [
-        zip, 'Thailand', 'ต.', 'อ.', 'จ.', 'ตำบล', 'อำเภอ', 'จังหวัด', 'แขวง', 'เขต', 'แขวง.', 'เขต.',
-        ' กทม. ', ' กทม ', ' กรุงเทพ '
+        zip,
+        'Thailand',
+        'ต.',
+        'อ.',
+        'จ.',
+        'ตำบล',
+        'อำเภอ',
+        'จังหวัด',
+        'แขวง',
+        'เขต',
+        'แขวง.',
+        'เขต.',
+        ' กทม. ',
+        ' กทม ',
+        ' กรุงเทพ ',
     ];
-    replacements.forEach(replacement => {
+    replacements.forEach((replacement) => {
         address = address.replace(replacement, '');
     });
     address = address.replace(' กทม ', ' กรุงเทพมหานคร ');
@@ -18,7 +31,9 @@ export const calculateMatchPoints = (
     element: IExpandedWithPoint,
     address: string,
 ): number => {
-    const matches = fields.filter(field => address.includes(element[field] as string));
+    const matches = fields.filter((field) =>
+        address.includes(element[field] as string),
+    );
     return matches.length;
 };
 
@@ -28,7 +43,7 @@ export const getBestResult = (
 ): IExpandedWithPoint | null => {
     const scoredResults = searchResult.map((element) => ({
         ...element,
-        point: calculateMatchPoints(element, address)
+        point: calculateMatchPoints(element, address),
     }));
 
     scoredResults.sort((a, b) => b.point! - a.point!);
@@ -37,7 +52,7 @@ export const getBestResult = (
 };
 
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    fields.forEach(field => {
+    fields.forEach((field) => {
         address = address.replace(new RegExp(`\\s${result[field]}`, 'g'), '');
     });
     return address.trim();
