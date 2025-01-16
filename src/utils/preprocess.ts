@@ -15,7 +15,6 @@ interface IDistrict {
     [index: number]: string | string[];
 }
 
-
 export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
     if (!data.data.length) {
         return [];
@@ -44,9 +43,11 @@ export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
 
     return data.data.flatMap((provinces: IProvince) => {
         const i = provinces.length === 3 ? 2 : 1;
-        return (provinces[i] as IAmphoe[]).flatMap((amphoes: IAmphoe) => 
+        return (provinces[i] as IAmphoe[]).flatMap((amphoes: IAmphoe) =>
             (amphoes[i] as IDistrict[]).flatMap((districts: IDistrict) => {
-                const districtArray = Array.isArray(districts[i]) ? districts[i] : [districts[i]];
+                const districtArray = Array.isArray(districts[i])
+                    ? districts[i]
+                    : [districts[i]];
                 return districtArray.map((zipcode: string) => {
                     const entry: IExpanded = {
                         district: t(districts[0] as string),
@@ -54,7 +55,7 @@ export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
                         province: t(provinces[0] as string),
                         zipcode: zipcode,
                     };
-                    
+
                     if (i === 2) {
                         entry.district_code = districts[1] as string;
                         entry.amphoe_code = amphoes[1] as string;
@@ -62,7 +63,7 @@ export const preprocess = (data: IThaiAddress, eng?: boolean): IExpanded[] => {
                     }
                     return entry;
                 });
-            })
+            }),
         );
     });
 };
