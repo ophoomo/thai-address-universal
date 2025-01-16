@@ -30,18 +30,11 @@ export default {
         resolve(),
         commonjs(),
         typescript({ tsconfig: './tsconfig.json' }),
-        terser(),
         babel({
             babelHelpers: 'bundled',
             exclude: 'node_modules/**',
         }),
+        terser(),
     ],
-    external: [
-        'vue',
-        'react',
-        'react-dom',
-        '@angular/core',
-        '@angular/common',
-        '@angular/compiler',
-    ],
+    external: [],
 };

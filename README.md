@@ -18,15 +18,13 @@ Thai Address Universal is a library developed from [thai-address-database](https
 
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
-In this project, we have utilized data from the Thai transliteration database provided by [Bangmod.Cloud](https://github.com/bangmodcloud/thai-address-database), which plays a crucial role in the development of this project. I would like to express my sincere gratitude to [Bangmod.Cloud](https://bangmod.cloud/) for their generous contribution of time and resources in creating this dataset. Their support has been invaluable.
-
 ## 🛠️ Installation
 
 ```bash
 npm install thai-address-universal --save
 ```
 
-```javascript
+```html
 <script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
 ```
 
@@ -38,11 +36,11 @@ const provinces = getProvinceAll();
 console.log(provinces);
 ```
 
-```javascript
+```html
 <script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
 <script>
-  const provinces = ThaiAddressUniversal.getProvinceAll();
-  console.log(provinces);
+    const provinces = ThaiAddressUniversal.getProvinceAll();
+    console.log(provinces);
 </script>
 ```
 
@@ -57,23 +55,15 @@ getProvinceAll(): string[]
 ```
 
 ```javascript
-getAmphoeByProvince (province: string): string[]
+getDistrictByProvince (province: string): string[]
 ```
 
 ```javascript
-getDistrictByAmphoe (amphoe: string): string[]
+getSubDistrictByDistrict (district: string): string[]
 ```
 
 ```javascript
-getZipCodeByDistrict (district: string): string[]
-```
-
-```javascript
-searchAddressByDistrict (searchStr: string, maxResult?: number): IExpanded[]
-```
-
-```javascript
-searchAddressByAmphoe (searchStr: string, maxResult?: number): IExpanded[]
+getZipCodeBySubDistrict (sub_district: string): string[]
 ```
 
 ```javascript
@@ -81,7 +71,15 @@ searchAddressByProvince (searchStr: string, maxResult?: number): IExpanded[]
 ```
 
 ```javascript
-searchAddressByZipcode (searchStr: string | number, maxResult?: number): IExpanded[]
+searchAddressByDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```
+
+```javascript
+searchAddressBySubDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```
+
+```javascript
+searchAddressByZipCode (searchStr: string | number, maxResult?: number): IExpanded[]
 ```
 
 ```javascript

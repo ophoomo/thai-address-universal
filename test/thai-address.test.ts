@@ -1,13 +1,13 @@
 import {
-    getAmphoeByProvince,
-    getDistrictByAmphoe,
-    getProvinceAll,
-    getZipCodeByDistrict,
-    searchAddressByAmphoe,
-    searchAddressByDistrict,
-    searchAddressByProvince,
-    searchAddressByZipcode,
     setEngMode,
+    getProvinceAll,
+    getDistrictByProvince,
+    getSubDistrictByDistrict,
+    getZipCodeByDistrict,
+    searchAddressByProvince,
+    searchAddressByDistrict,
+    searchAddressBySubDistrict,
+    searchAddressByZipCode,
     splitAddress,
 } from '../src/thai-address';
 
@@ -25,26 +25,26 @@ describe('Province', () => {
     });
 });
 
-describe('Amphoe', () => {
-    it('get amphoe with parameter', () => {
-        const result = getAmphoeByProvince('สระบุรี');
+describe('District', () => {
+    it('get District with parameter', () => {
+        const result = getDistrictByProvince('สระบุรี');
         expect(result.length).toBe(13);
     });
 
     it('should be [] when parameter is empty', () => {
-        const result = getAmphoeByProvince('');
+        const result = getDistrictByProvince('');
         expect(result.length).toBe(0);
     });
 });
 
 describe('District', () => {
     it('get district with parameter', () => {
-        const result = getDistrictByAmphoe('มวกเหล็ก');
+        const result = getSubDistrictByDistrict('มวกเหล็ก');
         expect(result.length).toBe(6);
     });
 
     it('should be [] when parameter is empty', () => {
-        const result = getDistrictByAmphoe('');
+        const result = getSubDistrictByDistrict('');
         expect(result.length).toBe(0);
     });
 });
@@ -131,11 +131,19 @@ describe('#search', () => {
         expect(result.length).toBe(0);
     });
 
-    it('searchAddressByAmphoe', () => {
-        let result = searchAddressByAmphoe('อรัญประเทศ');
+    it('searchAddressByDistrict', () => {
+        let result = searchAddressByDistrict('อรัญประเทศ');
         expect(result.length).toBe(13);
 
-        result = searchAddressByAmphoe('');
+        result = searchAddressByDistrict('');
+        expect(result.length).toBe(0);
+    });
+
+    it('searchAddressBySubDistrict', () => {
+        let result = searchAddressBySubDistrict('อรัญประเทศ');
+        expect(result.length).toBe(13);
+
+        result = searchAddressBySubDistrict('');
         expect(result.length).toBe(0);
     });
 
@@ -154,16 +162,16 @@ describe('#search', () => {
     });
 
     it('searchAddressByZipcode', () => {
-        let result = searchAddressByZipcode('27120');
+        let result = searchAddressByZipCode('27120');
         expect(result.length).toBe(15);
 
-        result = searchAddressByZipcode(27120);
+        result = searchAddressByZipCode(27120);
         expect(result.length).toBe(15);
 
-        result = searchAddressByZipcode(27120, 5);
+        result = searchAddressByZipCode(27120, 5);
         expect(result.length).toBe(5);
 
-        result = searchAddressByZipcode('');
+        result = searchAddressByZipCode('');
         expect(result.length).toBe(0);
     });
 });
@@ -175,7 +183,7 @@ describe('Function splitAddress', () => {
         const result = splitAddress(addr);
         expect(result).toEqual({
             address: '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์',
-            amphoe: 'ปากเกร็ด',
+            District: 'ปากเกร็ด',
             district: 'ปากเกร็ด',
             province: 'นนทบุรี',
             zipcode: '11120',

@@ -1,12 +1,12 @@
 export {
-    searchAddressByAmphoe,
+    searchAddressBySubDistrict,
     searchAddressByDistrict,
     searchAddressByProvince,
-    searchAddressByZipcode,
+    searchAddressByZipCode,
     splitAddress,
     getProvinceAll,
-    getAmphoeByProvince,
-    getDistrictByAmphoe,
+    getDistrictByProvince,
+    getSubDistrictByDistrict,
     getZipCodeByDistrict,
     setEngMode,
 } from './thai-address';

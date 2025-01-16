@@ -1,5 +1,16 @@
 import { IExpanded, IExpandedWithPoint } from '../thai-address.d';
 
+/**
+ *
+ */
+const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
+
+/**
+ *
+ * @param address
+ * @param zip
+ * @returns
+ */
 export const prepareAddress = (address: string, zip: string): string => {
     const replacements = [
         zip,
@@ -25,8 +36,12 @@ export const prepareAddress = (address: string, zip: string): string => {
     return address.trim();
 };
 
-const fields: (keyof IExpanded)[] = ['district', 'amphoe', 'province'];
-
+/**
+ *
+ * @param element
+ * @param address
+ * @returns
+ */
 export const calculateMatchPoints = (
     element: IExpandedWithPoint,
     address: string,
@@ -37,6 +52,12 @@ export const calculateMatchPoints = (
     return matches.length;
 };
 
+/**
+ *
+ * @param searchResult
+ * @param address
+ * @returns
+ */
 export const getBestResult = (
     searchResult: IExpandedWithPoint[],
     address: string,
@@ -51,9 +72,18 @@ export const getBestResult = (
     return scoredResults[0]?.point === 3 ? scoredResults[0] : null;
 };
 
+/**
+ *
+ * @param address
+ * @param result
+ * @returns
+ */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    fields.forEach((field) => {
-        address = address.replace(new RegExp(`\\s${result[field]}`, 'g'), '');
-    });
-    return address.trim();
+    return fields
+        .reduce(
+            (acc, field) =>
+                acc.replace(new RegExp(`\\s${result[field]}`, 'g'), ''),
+            address,
+        )
+        .trim();
 };
