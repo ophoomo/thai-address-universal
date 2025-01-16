@@ -28,15 +28,11 @@ class Province:
         self.province_eng_name = province_eng_name
         self.districts: List[District] = []
 
-class ThaiAddress:
-    def __init__(self, data: List[List[Any]], lookup: str, words: str):
-        self.data = data
-        self.lookup = lookup
-        self.words = words
 
 eng_set = {}
 dict_words = Counter()
 words = Counter()
+new_dict = {}
 
 def text_thai_to_eng(old: str) -> str:
     result = eng_set.get(old, '')
@@ -93,7 +89,8 @@ def add_to_dict(key: str, dict_words: Counter, words: Counter):
     dict_words[key] += 1
     word_list = word_tokenize(key)
     for word in word_list:
-        words[word] += 1
+        if not word.isspace():
+            words[word] += 1
 
 def change_word(text: str, new_words: dict) -> str:
     for ch, replacement  in new_words.items():
@@ -105,6 +102,11 @@ def is_thai(word):
         if not ('\u0E00' <= char <= '\u0E7F'):
             return False
     return True
+
+def findIndex(text: str):
+    if text in new_dict:
+        return new_dict[text]
+    return text
 
 def convert(data: List[Province]) -> List[Province]:
 
@@ -120,14 +122,18 @@ def convert(data: List[Province]) -> List[Province]:
 
     new_words = {}
     sorted_words = sorted(words.items(), key=lambda x: x[1], reverse=True)
+    max_thai = 0
+    max_eng = 0
     for i, (word, _) in enumerate(sorted_words):
-        if i < 104:
-            if is_thai(word):
-                new_words[chr(65 + i if i < 26 else 97 + i - 26)] = word
-            else:
-                new_words[chr(3585 + i)] = word
+        if is_thai(word):
+            if max_thai < 52:
+                new_words[chr(65 + max_thai) if max_thai < 26 else chr(97 + max_thai - 26)] = word
+                max_thai += 1
+        else:
+            if max_eng < 46:
+                new_words[chr(3585 + max_eng)] = word
+                max_eng += 1
 
-    new_dict = {}
     lookup = []
     for key, count in dict_words.items():
         if count > 1:
@@ -137,30 +143,31 @@ def convert(data: List[Province]) -> List[Province]:
 
     new_data = []
     for province in data:
-        new_province_th_name = change_word(province.province_thai_name, new_words)
-        new_province_en_name = change_word(province.province_eng_name, new_words)
+        new_province_th_name = findIndex(change_word(province.province_thai_name, new_words))
+        new_province_en_name = findIndex(change_word(province.province_eng_name, new_words))
         new_districts = []
         for district in province.districts:
-            new_district_th_name = change_word(district.district_thai_name, new_words)
-            new_district_en_name = change_word(district.district_eng_name, new_words)
+            new_district_th_name = findIndex(change_word(district.district_thai_name, new_words))
+            new_district_en_name = findIndex(change_word(district.district_eng_name, new_words))
             new_subdistricts = []
             for subdistrict in district.subdistricts:
-                new_subdistrict_th_name = change_word(subdistrict.subdistrict_thai_name, new_words)
-                new_subdistrict_en_name = change_word(subdistrict.subdistrict_eng_name, new_words)
+                new_subdistrict_th_name = findIndex(change_word(subdistrict.subdistrict_thai_name, new_words))
+
+                new_subdistrict_en_name = findIndex(change_word(subdistrict.subdistrict_eng_name, new_words))
                 new_subdistricts.append({
-                    # "subdistrict_id": subdistrict.subdistrict_id,
+                    'subdistrict_id': subdistrict.subdistrict_id,
                     'subdistrict_thai_name': new_subdistrict_th_name,
                     'subdistrict_eng_name': new_subdistrict_en_name,
                     'zip_code': subdistrict.zip_code
                 })
             new_districts.append({
-                # "district_id": district.district_id,
+                'district_id': district.district_id,
                 'district_thai_name': new_district_th_name,
                 'district_eng_name': new_district_en_name,
                 'subdistricts': new_subdistricts
             })
         new_data.append({
-            # "province_id": province.province_id,
+            'province_id': province.province_id,
             'province_thai_name': new_province_th_name,
             'province_eng_name': new_province_en_name,
             'districts': new_districts
@@ -171,30 +178,117 @@ def convert(data: List[Province]) -> List[Province]:
 
     return new_data, lookup_value, words_value
 
-def extract_values(obj: Any) -> Any:
-    if isinstance(obj, list):
-        return [extract_values(item) for item in obj]
+def th_convert(data: List[Province]):
+    eng_set = {}
+    dict_words = Counter()
+    words = Counter()
+    new_dict = {}
 
-    elif isinstance(obj, dict):
-        return [extract_values(value) for value in obj.values()]
+    for province in data:
+        add_to_dict(province.province_thai_name, dict_words, words)
+        for district in province.districts:
+            add_to_dict(district.district_thai_name, dict_words, words)
+            for subdistrict in district.subdistricts:
+                add_to_dict(subdistrict.subdistrict_thai_name, dict_words, words)
 
-    return obj
+    new_words = {}
+    sorted_words = sorted(words.items(), key=lambda x: x[1], reverse=True)
+    for i, (word, _) in enumerate(sorted_words):
+        if i < 52:
+            new_words[chr(65 + i) if i < 26 else chr(97 + i - 26)] = word
 
-def export_json(data: List[Province], lookup: str, words: str) -> None:
-    print('Start Export to JSON')
+    lookup = []
+    for key, count in dict_words.items():
+        if count > 1:
+            key = change_word(key, new_words)
+            new_dict[key] = len(lookup)
+            lookup.append(key)
 
-    os.makedirs('output', exist_ok=True)
+    new_data = []
+    for province in data:
+        new_province_th_name = findIndex(change_word(province.province_thai_name, new_words))
+        new_data.append(new_province_th_name)
+        for district in province.districts:
+            new_district_th_name = findIndex(change_word(district.district_thai_name, new_words))
+            new_data.append(new_district_th_name)
+            for subdistrict in district.subdistricts:
+                new_subdistrict_th_name = findIndex(change_word(subdistrict.subdistrict_thai_name, new_words))
+                new_data.append(new_subdistrict_th_name)
 
-    address_data = ThaiAddress(
-        data=extract_values(data),
-        lookup=lookup,
-        words=words
-    )
+    lookup_value = '|'.join(lookup)
+    words_value = '|'.join(new_words.values())
 
-    try:
-        with open('output/db.json', 'w', encoding='utf-8') as file:
-            json.dump(address_data.__dict__, file, ensure_ascii=False, separators=(',', ':'))
-        print('Export Success output/db.json')
-    except Exception as e:
-        logger.error(f"Error exporting data: {e}")
-        raise
+    return new_data, lookup_value, words_value
+
+def en_convert(data: List[Province]):
+    eng_set = {}
+    dict_words = Counter()
+    words = Counter()
+    new_dict = {}
+
+    for province in data:
+        add_to_dict(province.province_eng_name, dict_words, words)
+        for district in province.districts:
+            add_to_dict(district.district_eng_name, dict_words, words)
+            for subdistrict in district.subdistricts:
+                add_to_dict(subdistrict.subdistrict_eng_name, dict_words, words)
+
+    new_words = {}
+    sorted_words = sorted(words.items(), key=lambda x: x[1], reverse=True)
+    for i, (word, _) in enumerate(sorted_words):
+        if i < 46:
+            new_words[chr(3585 + i)] = word
+
+    lookup = []
+    for key, count in dict_words.items():
+        if count > 1:
+            key = change_word(key, new_words)
+            new_dict[key] = len(lookup)
+            lookup.append(key)
+
+    new_data = []
+    for province in data:
+        new_province_en_name = findIndex(change_word(province.province_eng_name, new_words))
+        new_data.append(new_province_en_name)
+        for district in province.districts:
+            new_district_en_name = findIndex(change_word(district.district_eng_name, new_words))
+            new_data.append(new_district_en_name)
+            for subdistrict in district.subdistricts:
+                new_subdistrict_en_name = findIndex(change_word(subdistrict.subdistrict_eng_name, new_words))
+                new_data.append(new_subdistrict_en_name)
+
+    lookup_value = '|'.join(lookup)
+    words_value = '|'.join(new_words.values())
+
+    return new_data, lookup_value, words_value
+
+def phoom(data):
+    current_id = 0
+    new_data = []
+    for province in data:
+        province_id = current_id
+        current_id += 1
+        new_districts = []
+        for district in province.districts:
+            new_subdistricts = []
+            district_id = current_id
+            current_id += 1
+            for subdistrict in district.subdistricts:
+                subdistrict_id = current_id
+                new_subdistricts.append({
+                    # "subdistrict_id": subdistrict.subdistrict_id,
+                    'subdistrict_name': subdistrict_id,
+                    'zip_code': subdistrict.zip_code
+                })
+                current_id += 1
+            new_districts.append({
+                # "district_id": district.district_id,
+                'district_name': district_id,
+                'subdistricts': new_subdistricts
+            })
+        new_data.append({
+            # "province_id": province.province_id,
+            'province_name': province_id,
+            'districts': new_districts
+        })
+    return new_data
