@@ -5,31 +5,33 @@ import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
 
-export default {
+const formats = ['umd', 'esm', 'cjs'];
+const outputDirs = {
+    umd: 'dist/umd',
+    esm: 'dist/esm',
+    cjs: 'dist/cjs',
+};
+
+export default formats.map((format) => ({
     input: 'src/index.ts',
-    output: [
-        {
-            file: 'dist/thai-address-universal.cjs.js',
-            format: 'cjs',
-            sourcemap: true,
-        },
-        {
-            file: 'dist/thai-address-universal.esm.js',
-            format: 'esm',
-            sourcemap: true,
-        },
-        {
-            file: 'dist/thai-address-universal.umd.js',
-            format: 'umd',
-            name: 'ThaiAddressUniversal',
-            sourcemap: true,
-        },
-    ],
+    output: {
+        dir: outputDirs[format],
+        format: format,
+        name: format === 'umd' ? 'ThaiAddressUniversal' : undefined,
+        sourcemap: true,
+        inlineDynamicImports: format === 'umd' ? true : undefined,
+    },
     plugins: [
         json(),
         resolve(),
+        typescript({
+            tsconfig: './tsconfig.json',
+            outDir: outputDirs[format],
+            declarationDir:
+                format === 'esm' ? `${outputDirs[format]}/types` : null,
+            declaration: format === 'esm' ? true : false,
+        }),
         commonjs(),
-        typescript({ tsconfig: './tsconfig.json' }),
         babel({
             babelHelpers: 'bundled',
             exclude: 'node_modules/**',
@@ -37,4 +39,4 @@ export default {
         terser(),
     ],
     external: [],
-};
+}));

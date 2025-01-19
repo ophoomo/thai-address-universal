@@ -5,7 +5,7 @@ export interface IExpanded {
     district: string;
     sub_district_code?: string;
     sub_district: string;
-    zipcode: string;
+    postal_code: string;
 }
 
 export interface IExpandedWithPoint extends IExpanded {

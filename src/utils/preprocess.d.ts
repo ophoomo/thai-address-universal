@@ -15,6 +15,5 @@ export interface IDistrict {
 }
 
 export interface ISubDistrict {
-    length: number;
-    [index: number]: number | number[];
+    [index: number]: number;
 }

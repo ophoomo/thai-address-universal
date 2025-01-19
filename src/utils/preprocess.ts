@@ -6,17 +6,25 @@ import { IDistrict, IProvince, ISubDistrict, IWord } from './preprocess.d';
  * @param data
  * @returns
  */
-export const preprocess = (data: IProvince[]): IExpanded[] => {
+export const preprocess = (data: IProvince[], words: string[]): IExpanded[] => {
     if (!data.length) {
         return [];
     }
 
     const expanded: IExpanded[] = [];
-    const i = 2;
+    const i = 1;
     data.forEach((provinces: IProvince) => {
         (provinces[i] as IDistrict[]).forEach((districts: IDistrict) => {
             (districts[i] as ISubDistrict[]).forEach(
-                (subDistricts: ISubDistrict) => {},
+                (subDistricts: ISubDistrict) => {
+                    const entry: IExpanded = {
+                        province: words[provinces[0] as number],
+                        district: words[districts[0] as number],
+                        sub_district: words[subDistricts[0]],
+                        postal_code: subDistricts[1].toString(),
+                    };
+                    expanded.push(entry);
+                },
             );
         });
     });
@@ -24,10 +32,13 @@ export const preprocess = (data: IProvince[]): IExpanded[] => {
 };
 
 /**
+ * The `preprocess_word` function is used to transform word data from an `IWord` object
+ * into an array of strings. It also allows for conditional processing based on whether
+ * the transformation should be done for English or not (through the `eng` parameter).
  *
- * @param data
- * @param eng
- * @returns
+ * @param data The `IWord` object containing the word data to be processed.
+ * @param eng A boolean flag that, if true, will process the data in English, otherwise it processes in Thai.
+ * @returns An array of strings that have been processed and transformed.
  */
 export const preprocess_word = (
     data: IWord,
@@ -41,11 +52,23 @@ export const preprocess_word = (
     const words = data.words?.split('|') || [];
     const useLookup = lookup.length > 0 && words.length > 0;
 
+    /**
+     * The `repl` function is used to replace a character with its mapped value from the `words` array.
+     * @param m The character to be transformed.
+     * @param eng If true, uses the English mapping from `words`, otherwise uses Thai mapping.
+     * @returns The transformed character.
+     */
     const repl = (m: string, eng: boolean): string => {
         const ch = m.charCodeAt(0);
         return eng ? words[ch - 3585] : words[ch < 97 ? ch - 65 : 26 + ch - 97];
     };
 
+    /**
+     * The `t` function is used to transform the text by replacing characters based on the `lookup` or `words` data.
+     * @param text The text to be transformed.
+     * @param eng If true, the function processes English characters; otherwise, it processes Thai.
+     * @returns The transformed text.
+     */
     const t = (text: string | number, eng: boolean): string => {
         if (!useLookup) {
             return text.toString();

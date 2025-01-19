@@ -86,6 +86,10 @@ searchAddressByZipCode (searchStr: string | number, maxResult?: number): IExpand
 splitAddress (fullAddress: string): IExpanded
 ```
 
+```javascript
+translateWord (word: string): string
+```
+
 ## 🙏 Acknowledgements
 
 I would like to extend my deepest thanks to:

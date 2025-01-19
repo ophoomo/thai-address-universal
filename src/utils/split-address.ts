@@ -1,18 +1,22 @@
 import { IExpanded, IExpandedWithPoint } from '../thai-address.d';
 
 /**
- *
+ * An array of field names used to reference specific address components in the IExpanded object.
+ * This array contains the keys of the IExpanded interface that represent the district, sub-district, and province.
  */
 const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
 
 /**
+ * Prepares the address string by removing certain keywords and replacing specific abbreviations.
+ * This function removes or replaces common terms, abbreviations, and the zip code from the address string to standardize it for further processing.
  *
- * @param address
- * @param zip
- * @returns
+ * @param address - The full address string to be prepared.
+ * @param zip - The zip code to be removed from the address.
+ *
+ * @returns The cleaned and standardized address string with the specified terms and zip code removed.
  */
 export const prepareAddress = (address: string, zip: string): string => {
-    const replacements = [
+    [
         zip,
         'Thailand',
         'ต.',
@@ -25,22 +29,23 @@ export const prepareAddress = (address: string, zip: string): string => {
         'เขต',
         'แขวง.',
         'เขต.',
-        ' กทม. ',
-        ' กทม ',
-        ' กรุงเทพ ',
-    ];
-    replacements.forEach((replacement) => {
+    ].forEach((replacement) => {
         address = address.replace(replacement, '');
     });
-    address = address.replace(' กทม ', ' กรุงเทพมหานคร ');
+    [' กทม. ', ' กทม ', ' กรุงเทพ '].forEach((replacement) => {
+        address = address.replace(replacement, ' กรุงเทพมหานคร ');
+    });
     return address.trim();
 };
 
 /**
+ * Calculates the match points for a given address based on the number of address components that match.
+ * This function compares the provided address against the elements' fields and counts how many fields in the element match the address.
  *
- * @param element
- * @param address
- * @returns
+ * @param element - An address object (IExpandedWithPoint) containing various address components.
+ * @param address - The address string to compare with the fields of the element.
+ *
+ * @returns The number of matching fields (match points) between the address and the element.
  */
 export const calculateMatchPoints = (
     element: IExpandedWithPoint,
@@ -53,10 +58,14 @@ export const calculateMatchPoints = (
 };
 
 /**
+ * Determines the best matching address from the search results based on a calculated match score.
+ * This function calculates match points for each address in the search results, sorts them by score,
+ * and returns the highest-scored result if it meets a minimum threshold.
  *
- * @param searchResult
- * @param address
- * @returns
+ * @param searchResult - An array of address objects with match points to be evaluated.
+ * @param address - The address string to compare against the search results.
+ *
+ * @returns The best matching address (IExpandedWithPoint) if the highest score is 3, or null if no match meets the threshold.
  */
 export const getBestResult = (
     searchResult: IExpandedWithPoint[],
@@ -73,10 +82,14 @@ export const getBestResult = (
 };
 
 /**
+ * Cleans up the address by removing specific address components from the address string.
+ * This function iterates over a list of fields and removes any occurrences of the corresponding values from the address string.
+ * The result is a cleaned-up address with those components removed.
  *
- * @param address
- * @param result
- * @returns
+ * @param address - The full address string to be cleaned up.
+ * @param result - An object containing address components to be removed from the full address.
+ *
+ * @returns A cleaned-up address string with the specified components removed.
  */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
     return fields

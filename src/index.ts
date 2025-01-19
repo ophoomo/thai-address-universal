@@ -9,6 +9,7 @@ export {
     getSubDistrictByDistrict,
     getZipCodeByDistrict,
     setEngMode,
+    translateWord,
 } from './thai-address';
 
 export { IExpanded } from './thai-address.d';

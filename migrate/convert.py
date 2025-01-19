@@ -262,7 +262,7 @@ def en_convert(data: List[Province]):
 
     return new_data, lookup_value, words_value
 
-def phoom(data):
+def address_convert(data: List[Province]):
     current_id = 0
     new_data = []
     for province in data:
