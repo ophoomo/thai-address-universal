@@ -397,15 +397,15 @@ export const translateWord = async (word: string): Promise<string> => {
     let index = -1;
     const firstChar = word.charAt(0).toLowerCase();
     const checkEng = firstChar >= 'a' && firstChar <= 'z';
+    if (!isThaiDBLoaded) await loadThaiDatabase();
+    if (!isEngDBLoaded) await loadEngDatabase();
 
     if (checkEng) {
-        if (!isThaiDBLoaded) await loadThaiDatabase();
         const text = word.toLowerCase().trim();
         index = engWords.findIndex((item) =>
             item.toLowerCase().trim().includes(text),
         );
     } else {
-        if (!isEngDBLoaded) await loadEngDatabase();
         index = thaiWords.findIndex((item) => item.includes(word));
     }
 
