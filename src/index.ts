@@ -1,14 +1,15 @@
 export {
-    searchAddressByAmphoe,
+    searchAddressBySubDistrict,
     searchAddressByDistrict,
     searchAddressByProvince,
-    searchAddressByZipcode,
+    searchAddressByPostalCode,
     splitAddress,
     getProvinceAll,
-    getAmphoeByProvince,
-    getDistrictByAmphoe,
-    getZipCodeByDistrict,
+    getDistrictByProvince,
+    getSubDistrictByDistrict,
+    getPostalCodeByDistrict,
     setEngMode,
+    translateWord,
 } from './thai-address';
 
-export { IExpanded } from './types';
+export { IExpanded } from './thai-address.d';

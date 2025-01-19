@@ -44,6 +44,8 @@ tsconfig.esm.json
 tsconfig.test.json
 tsconfig.test.tsbuildinfo
 
+migrate/
+
 .pre-commit-config.yaml
 jest.config.mjs
 

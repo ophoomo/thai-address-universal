@@ -18,74 +18,82 @@ Thai Address Universal is a library developed from [thai-address-database](https
 
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
-In this project, we have utilized data from the Thai transliteration database provided by [Bangmod.Cloud](https://github.com/bangmodcloud/thai-address-database), which plays a crucial role in the development of this project. I would like to express my sincere gratitude to [Bangmod.Cloud](https://bangmod.cloud/) for their generous contribution of time and resources in creating this dataset. Their support has been invaluable.
-
 ## 🛠️ Installation
 
 ```bash
 npm install thai-address-universal --save
 ```
 
-```javascript
-<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+```html
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/umd/index.js"></script>
 ```
 
 ## 👨‍💻 Example
 
-```javascript
+```typescript
 import { getProvinceAll } from 'thai-address-universal';
-const provinces = getProvinceAll();
-console.log(provinces);
+const getProvince = async () => {
+    const provinces = await getProvinceAll();
+    console.log(provinces);
+};
+getProvince();
 ```
 
-```javascript
-<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+```html
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/umd/index.js"></script>
 <script>
-  const provinces = ThaiAddressUniversal.getProvinceAll();
-  console.log(provinces);
+    const getProvince = async () => {
+        const provinces = await ThaiAddressUniversal.getProvinceAll();
+        console.log(provinces);
+    };
+    getProvince();
 </script>
 ```
 
 ## ✨ Features
 
-```javascript
-setEngMode(status: boolean): void
+```typescript
+setEngMode (status: boolean): void
 ```
 
-```javascript
-getProvinceAll(): string[]
+```typescript
+getProvinceAll (): Promise<string[]>
 ```
 
-```javascript
-getAmphoeByProvince (province: string): string[]
+```typescript
+getDistrictByProvince (province: string): Promise<string[]>
 ```
 
-```javascript
-getDistrictByAmphoe (amphoe: string): string[]
+```typescript
+getSubDistrictByDistrict (district: string): Promise<string[]>
 ```
 
-```javascript
-getZipCodeByDistrict (district: string): string[]
+```typescript
+getPostalCodeBySubDistrict (sub_district: string): Promise<string[]>
 ```
 
-```javascript
-searchAddressByDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByProvince (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressByAmphoe (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByDistrict (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressByProvince (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressBySubDistrict (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressByZipcode (searchStr: string | number, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByPostalCode (searchStr: string | number, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-splitAddress (fullAddress: string): IExpanded
+```typescript
+splitAddress (fullAddress: string): Promise<IExpanded>
+```
+
+```typescript
+translateWord (word: string): Promise<string>
 ```
 
 ## 🙏 Acknowledgements
