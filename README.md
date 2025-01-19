@@ -18,6 +18,10 @@ Thai Address Universal is a library developed from [thai-address-database](https
 
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
+<p align="center">
+<a href="https://ophoomo.github.io/thai-address-universal/index.html">📄TypeDoc</a>
+</p>
+
 ## 🛠️ Installation
 
 ```bash

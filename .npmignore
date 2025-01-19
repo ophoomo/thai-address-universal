@@ -58,3 +58,7 @@ build.ts
 src
 
 thai-address-universal.svg
+
+eslint.config.js
+
+Makefile
