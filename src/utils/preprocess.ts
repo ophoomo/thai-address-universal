@@ -2,9 +2,20 @@ import { IExpanded } from '../thai-address.d';
 import { IDistrict, IProvince, ISubDistrict, IWord } from './preprocess.d';
 
 /**
+ * This function processes a nested data structure of provinces, districts, and sub-districts,
+ * and maps it to a flat structure containing expanded details of each sub-district with corresponding
+ * postal codes and labels based on provided words.
  *
- * @param data
- * @returns
+ * @param data - An array of provinces where each province contains an array of districts,
+ *               and each district contains an array of sub-districts.
+ * @param words - An array of words used to map numeric indices in provinces, districts,
+ *                and sub-districts to human-readable names.
+ *
+ * @returns An array of IExpanded objects, each containing:
+ *          - province name
+ *          - district name
+ *          - sub-district name
+ *          - postal code as a string
  */
 export const preprocess = (data: IProvince[], words: string[]): IExpanded[] => {
     if (!data.length) {

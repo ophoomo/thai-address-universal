@@ -3,11 +3,11 @@ import {
     getProvinceAll,
     getDistrictByProvince,
     getSubDistrictByDistrict,
-    getZipCodeByDistrict,
+    getPostalCodeByDistrict,
     searchAddressByProvince,
     searchAddressByDistrict,
     searchAddressBySubDistrict,
-    searchAddressByZipCode,
+    searchAddressByPostalCode,
     splitAddress,
     translateWord,
 } from '../src/thai-address';
@@ -15,54 +15,54 @@ import {
 setEngMode(false);
 
 describe('Province Tests', () => {
-    it('should return all provinces (77 total)', () => {
-        const result = getProvinceAll();
+    it('should return all provinces (77 total)', async () => {
+        const result = await getProvinceAll();
         expect(result.length).toBe(77);
     });
 
-    it('should not return null when calling getProvinceAll', () => {
-        const result = getProvinceAll();
+    it('should not return null when calling getProvinceAll', async () => {
+        const result = await getProvinceAll();
         expect(result).not.toBeNull();
     });
 });
 
 describe('District Tests', () => {
-    it('should return 13 districts for "สระบุรี"', () => {
-        const result = getDistrictByProvince('สระบุรี');
+    it('should return 13 districts for "สระบุรี"', async () => {
+        const result = await getDistrictByProvince('สระบุรี');
         expect(result.length).toBe(13);
     });
 
-    it('should return an empty array when province name is empty', () => {
-        const result = getDistrictByProvince('');
+    it('should return an empty array when province name is empty', async () => {
+        const result = await getDistrictByProvince('');
         expect(result.length).toBe(0);
     });
 });
 
 describe('Sub-District Tests', () => {
-    it('should return 6 sub-districts for "มวกเหล็ก"', () => {
-        const result = getSubDistrictByDistrict('มวกเหล็ก');
+    it('should return 6 sub-districts for "มวกเหล็ก"', async () => {
+        const result = await getSubDistrictByDistrict('มวกเหล็ก');
         expect(result.length).toBe(6);
     });
 
-    it('should return an empty array when district name is empty', () => {
-        const result = getSubDistrictByDistrict('');
+    it('should return an empty array when district name is empty', async () => {
+        const result = await getSubDistrictByDistrict('');
         expect(result.length).toBe(0);
     });
 });
 
-describe('Zip Code Tests', () => {
-    it('should return 1 zip code for "ท่าตะเกียบ"', () => {
-        const result = getZipCodeByDistrict('ท่าตะเกียบ');
+describe('Postal Code Tests', () => {
+    it('should return 1 postal code for "ท่าตะเกียบ"', async () => {
+        const result = await getPostalCodeByDistrict('ท่าตะเกียบ');
         expect(result.length).toBe(1);
     });
 
-    it('should return an empty array when district name is empty', () => {
-        const result = getZipCodeByDistrict('');
+    it('should return an empty array when district name is empty', async () => {
+        const result = await getPostalCodeByDistrict('');
         expect(result.length).toBe(0);
     });
 });
 
-describe('Sub Districts with Multiple Zip Codes', () => {
+describe('Sub Districts with Multiple Postal Codes', () => {
     const sub_districts = [
         'ปราณบุรี',
         'วังก์พง',
@@ -73,8 +73,8 @@ describe('Sub Districts with Multiple Zip Codes', () => {
     ];
 
     sub_districts.forEach((sub_district) => {
-        it(`should return multiple results for sub district "${sub_district}"`, () => {
-            const result = searchAddressBySubDistrict(sub_district);
+        it(`should return multiple results for sub district "${sub_district}"`, async () => {
+            const result = await searchAddressBySubDistrict(sub_district);
             expect(result.length).toBeGreaterThan(1);
             expect(
                 result.filter((item) => item.province === 'ประจวบคีรีขันธ์')
@@ -85,56 +85,56 @@ describe('Sub Districts with Multiple Zip Codes', () => {
 });
 
 describe('Address Search Functions', () => {
-    it('should return 1 result for district "อรัญประเทศ"', () => {
-        const result = searchAddressByDistrict('อรัญประเทศ');
+    it('should return 1 result for district "อรัญประเทศ"', async () => {
+        const result = await searchAddressByDistrict('อรัญประเทศ');
         expect(result.length).toBe(13);
     });
 
-    it('should return an empty array for empty district name', () => {
-        const result = searchAddressByDistrict('');
+    it('should return an empty array for empty district name', async () => {
+        const result = await searchAddressByDistrict('');
         expect(result.length).toBe(0);
     });
 
-    it('should return 13 results for sub-district "อรัญประเทศ"', () => {
-        const result = searchAddressBySubDistrict('อรัญประเทศ');
+    it('should return 13 results for sub-district "อรัญประเทศ"', async () => {
+        const result = await searchAddressBySubDistrict('อรัญประเทศ');
         expect(result.length).toBe(1);
     });
 
-    it('should return results based on province "สระแก้ว"', () => {
-        let result = searchAddressByProvince('สระแก้ว');
+    it('should return results based on province "สระแก้ว"', async () => {
+        let result = await searchAddressByProvince('สระแก้ว');
         expect(result.length).toBe(20);
 
-        result = searchAddressByProvince('สระแก้ว', 10);
+        result = await searchAddressByProvince('สระแก้ว', 10);
         expect(result.length).toBe(10);
     });
 
-    it('should return no results for non-existent province "อรัญประเทศ"', () => {
-        const result = searchAddressByProvince('อรัญประเทศ');
+    it('should return no results for non-existent province "อรัญประเทศ"', async () => {
+        const result = await searchAddressByProvince('อรัญประเทศ');
         expect(result.length).toBe(0);
     });
 
-    it('should return 15 results for zip code "27120"', () => {
-        let result = searchAddressByZipCode('27120');
+    it('should return 15 results for postal code "27120"', async () => {
+        let result = await searchAddressByPostalCode('27120');
         expect(result.length).toBe(15);
 
-        result = searchAddressByZipCode(27120);
+        result = await searchAddressByPostalCode(27120);
         expect(result.length).toBe(15);
 
-        result = searchAddressByZipCode(27120, 5);
+        result = await searchAddressByPostalCode(27120, 5);
         expect(result.length).toBe(5);
     });
 
-    it('should return an empty array for empty zip code', () => {
-        const result = searchAddressByZipCode('');
+    it('should return an empty array for empty postal code', async () => {
+        const result = await searchAddressByPostalCode('');
         expect(result.length).toBe(0);
     });
 });
 
 describe('Address Splitting Function', () => {
-    it('should correctly split a complete address', () => {
+    it('should correctly split a complete address', async () => {
         const addr =
             '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์ ปากเกร็ด ปากเกร็ด นนทบุรี Thailand 11120';
-        const result = splitAddress(addr);
+        const result = await splitAddress(addr);
         expect(result).toEqual({
             address: '126/548 ถ.สุขาประชาสรรค์ ม.การเคหะนนท์',
             district: 'ปากเกร็ด',
@@ -152,8 +152,8 @@ describe('Address Splitting Function', () => {
             '126/548 ถ.สุขประประชาสรรค์ ม.การเคหะนนท์ Thailand 11120',
         ];
 
-        invalidAddresses.forEach((addr) => {
-            const result = splitAddress(addr);
+        invalidAddresses.forEach(async (addr) => {
+            const result = await splitAddress(addr);
             expect(result).toBeNull();
             expect(addr).toBe(addr); // Ensure the original address is not modified
         });
@@ -161,20 +161,20 @@ describe('Address Splitting Function', () => {
 });
 
 describe('Translate Word Function', () => {
-    it('should return the input word when no matching data is found in the database', () => {
-        const result = translateWord('สวัสดีครับ');
+    it('should return the input word when no matching data is found in the database', async () => {
+        const result = await translateWord('สวัสดีครับ');
 
         expect(result).toBe('สวัสดีครับ');
     });
 
-    it('should return an empty string when the input is an empty string', () => {
-        const result = translateWord('');
+    it('should return an empty string when the input is an empty string', async () => {
+        const result = await translateWord('');
 
         expect(result).toBe('');
     });
 
-    it('should return the correct English translation when a Thai word exists in the database', () => {
-        const result = translateWord('สระบุรี');
+    it('should return the correct English translation when a Thai word exists in the database', async () => {
+        const result = await translateWord('สระบุรี');
 
         expect(result).toBe('Saraburi');
     });

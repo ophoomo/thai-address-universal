@@ -25,69 +25,75 @@ npm install thai-address-universal --save
 ```
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/umd/index.js"></script>
 ```
 
 ## 👨‍💻 Example
 
-```javascript
+```typescript
 import { getProvinceAll } from 'thai-address-universal';
-const provinces = getProvinceAll();
-console.log(provinces);
+const getProvince = async () => {
+    const provinces = await getProvinceAll();
+    console.log(provinces);
+};
+getProvince();
 ```
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/thai-address-universal.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/thai-address-universal/dist/umd/index.js"></script>
 <script>
-    const provinces = ThaiAddressUniversal.getProvinceAll();
-    console.log(provinces);
+    const getProvince = async () => {
+        const provinces = await ThaiAddressUniversal.getProvinceAll();
+        console.log(provinces);
+    };
+    getProvince();
 </script>
 ```
 
 ## ✨ Features
 
-```javascript
-setEngMode(status: boolean): void
+```typescript
+setEngMode (status: boolean): void
 ```
 
-```javascript
-getProvinceAll(): string[]
+```typescript
+getProvinceAll (): Promise<string[]>
 ```
 
-```javascript
-getDistrictByProvince (province: string): string[]
+```typescript
+getDistrictByProvince (province: string): Promise<string[]>
 ```
 
-```javascript
-getSubDistrictByDistrict (district: string): string[]
+```typescript
+getSubDistrictByDistrict (district: string): Promise<string[]>
 ```
 
-```javascript
-getZipCodeBySubDistrict (sub_district: string): string[]
+```typescript
+getPostalCodeBySubDistrict (sub_district: string): Promise<string[]>
 ```
 
-```javascript
-searchAddressByProvince (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByProvince (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressByDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByDistrict (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressBySubDistrict (searchStr: string, maxResult?: number): IExpanded[]
+```typescript
+searchAddressBySubDistrict (searchStr: string, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-searchAddressByZipCode (searchStr: string | number, maxResult?: number): IExpanded[]
+```typescript
+searchAddressByPostalCode (searchStr: string | number, maxResult?: number): Promise<IExpanded[]>
 ```
 
-```javascript
-splitAddress (fullAddress: string): IExpanded
+```typescript
+splitAddress (fullAddress: string): Promise<IExpanded>
 ```
 
-```javascript
-translateWord (word: string): string
+```typescript
+translateWord (word: string): Promise<string>
 ```
 
 ## 🙏 Acknowledgements

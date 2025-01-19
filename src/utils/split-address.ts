@@ -8,16 +8,19 @@ const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
 
 /**
  * Prepares the address string by removing certain keywords and replacing specific abbreviations.
- * This function removes or replaces common terms, abbreviations, and the zip code from the address string to standardize it for further processing.
+ * This function removes or replaces common terms, abbreviations, and the postal code from the address string to standardize it for further processing.
  *
  * @param address - The full address string to be prepared.
- * @param zip - The zip code to be removed from the address.
+ * @param postal_code - The postal code code to be removed from the address.
  *
- * @returns The cleaned and standardized address string with the specified terms and zip code removed.
+ * @returns The cleaned and standardized address string with the specified terms and postal code removed.
  */
-export const prepareAddress = (address: string, zip: string): string => {
+export const prepareAddress = (
+    address: string,
+    postal_code: string,
+): string => {
     [
-        zip,
+        postal_code,
         'Thailand',
         'ต.',
         'อ.',
