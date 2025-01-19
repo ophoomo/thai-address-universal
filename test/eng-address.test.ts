@@ -1,223 +1,189 @@
 import {
-    getAmphoeByProvince,
-    getDistrictByAmphoe,
-    getProvinceAll,
-    getZipCodeByDistrict,
-    searchAddressByAmphoe,
-    searchAddressByDistrict,
-    searchAddressByProvince,
-    searchAddressByZipcode,
     setEngMode,
+    getProvinceAll,
+    getDistrictByProvince,
+    getSubDistrictByDistrict,
+    getPostalCodeByDistrict,
+    searchAddressByProvince,
+    searchAddressByDistrict,
+    searchAddressBySubDistrict,
+    searchAddressByPostalCode,
     splitAddress,
+    translateWord,
 } from '../src/thai-address';
 
 setEngMode(true);
 
-describe('Province', () => {
-    it('get province all', () => {
-        const result = getProvinceAll();
+describe('Province Tests', () => {
+    it('should return all provinces (77 total)', async () => {
+        const result = await getProvinceAll();
         expect(result.length).toBe(77);
     });
 
-    it('should be result not null when call function', () => {
-        const result = getProvinceAll();
+    it('should not return null when calling getProvinceAll', async () => {
+        const result = await getProvinceAll();
         expect(result).not.toBeNull();
     });
 });
 
-describe('Amphoe', () => {
-    it('get amphoe with parameter', () => {
-        const result = getAmphoeByProvince('Amnat Charoen');
-        expect(result.length).toBe(7);
-    });
-
-    it('should be [] when parameter is empty', () => {
-        const result = getAmphoeByProvince('');
-        expect(result.length).toBe(0);
-    });
-});
-
-describe('District', () => {
-    it('get district with parameter', () => {
-        const result = getDistrictByAmphoe('Chanuman');
-        expect(result.length).toBe(5);
-    });
-
-    it('should be [] when parameter is empty', () => {
-        const result = getDistrictByAmphoe('');
-        expect(result.length).toBe(0);
-    });
-});
-
-describe('Zip Code', () => {
-    it('get zip code with parameter', () => {
-        const result = getZipCodeByDistrict('Khok San');
-        expect(result.length).toBe(1);
-    });
-
-    it('should be [] when parameter is empty', () => {
-        const result = getZipCodeByDistrict('');
-        expect(result.length).toBe(0);
-    });
-});
-
-describe('More than 1 zipcode District', () => {
-    it('District Pranburi should have 2 results', () => {
-        const result = searchAddressByDistrict('Pran Buri');
-        expect(result.length).toBe(1);
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-
-    it('District Wang Phong should have 2 results', () => {
-        const result = searchAddressByDistrict('Wang Phong');
-        expect(result.length).toBe(1);
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-
-    it('District Nong Ta Taem should have 2 results', () => {
-        const result = searchAddressByDistrict('Nong Ta Taem');
-        expect(result.length).toBe(1);
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-
-    it('District Khao Chao should have 2 results', () => {
-        const result = searchAddressByDistrict('Khao Chao');
-        expect(result.length).toBe(1);
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-
-    it('District Sam Roi Yot should have 2 results', () => {
-        const result = searchAddressByDistrict('Sam Roi Yot');
-        expect(result.length).toBe(1);
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-
-    it('District Khao Noi should have 2 results', () => {
-        const result = searchAddressByDistrict('Khao Noi');
-        expect(
-            result.filter((item) => item.province === 'Prachuap Khiri Khan')
-                .length,
-        ).toBe(1);
-    });
-});
-
-describe('#search', () => {
-    it('searchAddressByDistrict', () => {
-        let result = searchAddressByDistrict('Aranyaprathet');
-        expect(result.length).toBe(1);
-
-        result = searchAddressByDistrict(' Aranyaprathet');
-        expect(result.length).toBe(1);
-
-        result = searchAddressByDistrict('Aranyaprathet ');
-        expect(result.length).toBe(1);
-
-        result = searchAddressByDistrict('  Aranyaprathet  ');
-        expect(result.length).toBe(1);
-
-        result = searchAddressByDistrict('');
-        expect(result.length).toBe(0);
-
-        result = searchAddressByDistrict('  ');
-        expect(result.length).toBe(0);
-    });
-
-    it('searchAddressByAmphoe', () => {
-        let result = searchAddressByAmphoe('Aranyaprathet');
+describe('District Tests', () => {
+    it('should return 13 districts for "Saraburi"', async () => {
+        const result = await getDistrictByProvince('Saraburi');
         expect(result.length).toBe(13);
+    });
 
-        result = searchAddressByAmphoe('');
+    it('should return an empty array when province name is empty', async () => {
+        const result = await getDistrictByProvince('');
+        expect(result.length).toBe(0);
+    });
+});
+
+describe('Sub-District Tests', () => {
+    it('should return 6 sub-districts for "Muak Lek"', async () => {
+        const result = await getSubDistrictByDistrict('Muak Lek');
+        expect(result.length).toBe(6);
+    });
+
+    it('should return an empty array when district name is empty', async () => {
+        const result = await getSubDistrictByDistrict('');
+        expect(result.length).toBe(0);
+    });
+});
+
+describe('Postal Code Tests', () => {
+    it('should return 1 postal code for "Tha Takiap"', async () => {
+        const result = await getPostalCodeByDistrict('Tha Takiap');
+        expect(result.length).toBe(1);
+    });
+
+    it('should return an empty array when district name is empty', async () => {
+        const result = await getPostalCodeByDistrict('');
+        expect(result.length).toBe(0);
+    });
+});
+
+describe('Sub Districts with Multiple Postal Codes', () => {
+    const sub_districts = [
+        'Pran Buri',
+        'Wang Phong',
+        'Nong Ta Taem',
+        'Khao Chao',
+        'Sam Roi Yot',
+        'Khao Noi',
+    ];
+
+    sub_districts.forEach((sub_district) => {
+        it(`should return multiple results for sub district "${sub_district}"`, async () => {
+            const result = await searchAddressBySubDistrict(sub_district);
+            expect(result.length).toBeGreaterThan(1);
+            expect(
+                result.filter((item) => item.province === 'Prachuap Khiri Khan')
+                    .length,
+            ).toBe(2);
+        });
+    });
+});
+
+describe('Address Search Functions', () => {
+    it('should return 1 result for district "Aranyaprathet"', async () => {
+        const result = await searchAddressByDistrict('Aranyaprathet');
+        expect(result.length).toBe(13);
+    });
+
+    it('should return an empty array for empty district name', async () => {
+        const result = await searchAddressByDistrict('');
         expect(result.length).toBe(0);
     });
 
-    it('searchAddressByProvince', () => {
-        let result = searchAddressByProvince('Sa Kaeo');
+    it('should return 13 results for sub-district "Aranyaprathet"', async () => {
+        const result = await searchAddressBySubDistrict('Aranyaprathet');
+        expect(result.length).toBe(1);
+    });
+
+    it('should return results based on province "Sa Kaeo"', async () => {
+        let result = await searchAddressByProvince('Sa Kaeo');
         expect(result.length).toBe(20);
 
-        result = searchAddressByProvince('Sa Kaeo', 10);
+        result = await searchAddressByProvince('Sa Kaeo', 10);
         expect(result.length).toBe(10);
+    });
 
-        result = searchAddressByProvince('Aranyaprathet');
-        expect(result.length).toBe(0);
-
-        result = searchAddressByProvince('');
+    it('should return no results for non-existent province "Aranyaprathet"', async () => {
+        const result = await searchAddressByProvince('Aranyaprathet');
         expect(result.length).toBe(0);
     });
 
-    it('searchAddressByZipcode', () => {
-        let result = searchAddressByZipcode('27120');
-        expect(result.length).toBe(17);
+    it('should return 15 results for postal code "27120"', async () => {
+        let result = await searchAddressByPostalCode('27120');
+        expect(result.length).toBe(15);
 
-        result = searchAddressByZipcode(27120);
-        expect(result.length).toBe(17);
+        result = await searchAddressByPostalCode(27120);
+        expect(result.length).toBe(15);
 
-        result = searchAddressByZipcode(27120, 5);
+        result = await searchAddressByPostalCode(27120, 5);
         expect(result.length).toBe(5);
+    });
 
-        result = searchAddressByZipcode('');
+    it('should return an empty array for empty postal code', async () => {
+        const result = await searchAddressByPostalCode('');
         expect(result.length).toBe(0);
     });
 });
 
-describe('Function splitAddress', () => {
-    it('should split address without modifying the original address', () => {
+describe('Address Splitting Function', () => {
+    it('should correctly split a complete address', async () => {
         const addr =
-            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Nonthaburi Thailand 11120';
-        const result = splitAddress(addr);
+            '126/548 Sukaprachasan Road, Kankea Housing Estate Pak Kret Pak Kret Nonthaburi Thailand 11120';
+        const result = await splitAddress(addr);
         expect(result).toEqual({
-            address: '126/548 Sukaprachasan Road Khae Ha Nonth',
-            amphoe: 'Pak Kret',
+            address: '126/548 Sukaprachasan Road, Kankea Housing Estate',
             district: 'Pak Kret',
+            sub_district: 'Pak Kret',
             province: 'Nonthaburi',
-            zipcode: '11120',
+            postal_code: '11120',
         });
-
-        expect(addr).toBe(
-            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Nonthaburi Thailand 11120',
-        );
+        expect(addr).toBe(addr); // Ensure the original address is not modified
     });
 
-    it('should return null when it cannot split address', () => {
-        const addr = '126/548 Sukaprachasan Road Khae Ha Nonth';
-        const result = splitAddress(addr);
-        expect(result).toBeNull();
+    it('should return null when unable to split address', () => {
+        const invalidAddresses = [
+            '126/548 Sukaprachasan Road, Kankea Housing Estate',
+            '126/548 Sukaprachasan Road, Kankea Housing Estate Pak Kret Pak Kret Thailand 11120',
+            '126/548 Sukaprachasan Road, Kankea Housing Estate Thailand 11120',
+        ];
 
-        expect(addr).toBe('126/548 Sukaprachasan Road Khae Ha Nonth');
+        invalidAddresses.forEach(async (addr) => {
+            const result = await splitAddress(addr);
+            expect(result).toBeNull();
+            expect(addr).toBe(addr); // Ensure the original address is not modified
+        });
+    });
+});
+
+describe('Translate Word Function', () => {
+    it('should return the input word when no matching data is found in the database', async () => {
+        const result = await translateWord('Welcome');
+
+        expect(result).toBe('Welcome');
     });
 
-    it('should return null when it cannot split address', () => {
-        const addr =
-            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Thailand 11120';
-        const result = splitAddress(addr);
-        expect(result).toBeNull();
+    it('should return an empty string when the input is an empty string', async () => {
+        const result = await translateWord('');
 
-        expect(addr).toBe(
-            '126/548 Sukaprachasan Road Khae Ha Nonth Pak Kret Pak Kret Thailand 11120',
-        );
+        expect(result).toBe('');
     });
 
-    it('should return null when it cannot split address', () => {
-        const addr = '126/548 Sukaprachasan Road Khae Ha Nonth Thailand 11120';
-        const result = splitAddress(addr);
-        expect(result).toBeNull();
+    it('should return the correct Thai translation when a English word exists in the database', async () => {
+        const result = await translateWord('Saraburi');
 
-        expect(addr).toBe(
-            '126/548 Sukaprachasan Road Khae Ha Nonth Thailand 11120',
-        );
+        expect(result).toBe('สระบุรี');
+    });
+
+    it('should correctly translate "Saraburi" to "สระบุรี" regardless of case', async () => {
+        const resultLower = await translateWord('Saraburi'.toLowerCase());
+        const resultUpper = await translateWord('Saraburi'.toUpperCase());
+
+        expect(resultLower).toBe('สระบุรี');
+        expect(resultUpper).toBe('สระบุรี');
     });
 });

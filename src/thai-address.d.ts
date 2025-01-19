@@ -1,17 +1,11 @@
-export interface IThaiAddress {
-    data: any;
-    lookup: string;
-    words: string;
-}
-
 export interface IExpanded {
-    district: string;
-    amphoe: string;
-    province: string;
-    zipcode: string;
-    district_code?: string;
-    amphoe_code?: string;
     province_code?: string;
+    province: string;
+    district_code?: string;
+    district: string;
+    sub_district_code?: string;
+    sub_district: string;
+    postal_code: string;
 }
 
 export interface IExpandedWithPoint extends IExpanded {
