@@ -63,7 +63,7 @@ let isThaiDBLoaded = false;
  * and sets the global variable `isThaiDBLoaded` to true when the data is successfully loaded.
  * If an error occurs, it logs the error message to the console.
  */
-const loadThaiDatabase = async () => {
+export const loadThaiDatabase = async () => {
     try {
         const data = await import('../migrate/output/th_db.json');
         thaiWords = preprocess_word(data, false);
@@ -80,7 +80,7 @@ const loadThaiDatabase = async () => {
  * and sets the global variable `isEngDBLoaded` to true when the data is successfully loaded.
  * If an error occurs, it logs the error message to the console.
  */
-const loadEngDatabase = async () => {
+export const loadEngDatabase = async () => {
     try {
         const data = await import('../migrate/output/en_db.json');
         engWords = preprocess_word(data, true);
@@ -116,7 +116,7 @@ const setupDatabase = async () => {
  *
  * @returns {Promise<IExpanded[]>} The corresponding expanded database (either en_db or th_db).
  */
-const db = async (): Promise<IExpanded[]> => {
+export const db = async (): Promise<IExpanded[]> => {
     await setupDatabase();
     return engMode ? engDB : thaiDB;
 };
@@ -155,7 +155,7 @@ const cacheResult = async (
  * @param {number} [maxResult=20] - The maximum number of results to return (optional, default is 20).
  * @returns {Promise<IExpanded[]>} - A filtered array of items from the database that match the search criteria.
  */
-const resolveResultbyField = async (
+export const resolveResultbyField = async (
     type: keyof IExpanded,
     searchStr: string | number,
     maxResult: number = 20,

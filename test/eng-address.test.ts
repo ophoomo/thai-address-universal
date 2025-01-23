@@ -10,7 +10,10 @@ import {
     searchAddressByPostalCode,
     splitAddress,
     translateWord,
+    loadEngDatabase,
+    resolveResultbyField,
 } from '../src/thai-address';
+import * as ThaiAddress from '../src/thai-address';
 
 setEngMode(true);
 
@@ -185,5 +188,47 @@ describe('Translate Word Function', () => {
 
         expect(resultLower).toBe('สระบุรี');
         expect(resultUpper).toBe('สระบุรี');
+    });
+});
+
+describe('Database Loading Errors', () => {
+    it('should log an error when Eng database loading fails', async () => {
+        const db = jest.mock('../migrate/output/en_db.json', () => {
+            throw new Error('Failed to load JSON');
+        });
+
+        const consoleErrorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation();
+
+        await loadEngDatabase();
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Error loading English database',
+            expect.any(Error),
+        );
+        consoleErrorSpy.mockRestore();
+        db.restoreAllMocks();
+    });
+});
+
+describe('resolveResultbyField Function', () => {
+    it('should return empty array if error occurs during filtering', async () => {
+        const db = jest
+            .spyOn(ThaiAddress, 'db')
+            .mockRejectedValue(new Error('Database error'));
+        const consoleErrorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation();
+
+        const result = await resolveResultbyField('province', 'Test', 3);
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Error during filtering:',
+            expect.any(Error),
+        );
+        expect(result).toEqual([]);
+        consoleErrorSpy.mockRestore();
+        db.mockRestore();
     });
 });
