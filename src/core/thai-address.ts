@@ -42,8 +42,7 @@ const ensureDatabaseInitialized = async (): Promise<void> => {
  * Retrieves all data from the current database.
  * @returns An array of expanded address data.
  */
-export const getDatabase = async (): Promise<IExpanded[]> => {
-    await ensureDatabaseInitialized();
+export const getDatabase = (): IExpanded[] => {
     return database.getData();
 };
 
