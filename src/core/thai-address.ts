@@ -11,6 +11,7 @@ import { IAddress } from '../types/address';
 import { ITranslate } from '../types/translate';
 
 let database: IDatabase;
+let databasePromise: Promise<IDatabase>;
 let search: ISearch;
 let address: IAddress;
 let translate: ITranslate;
@@ -21,7 +22,8 @@ let translate: ITranslate;
  * and initializes the search, address, and translate repositories.
  */
 const initializeDatabase = async (): Promise<void> => {
-    database = await DatabaseFactory.createDatabase(getDefaultLanguage());
+    databasePromise = DatabaseFactory.createDatabase(getDefaultLanguage());
+    database = await databasePromise;
     search = new SearchRepository(database);
     address = new Address(database);
     translate = new Translate();
@@ -33,7 +35,7 @@ initializeDatabase();
  * If the database is not initialized yet, this function will call `initializeDatabase` to initialize it.
  */
 const ensureDatabaseInitialized = async (): Promise<void> => {
-    if (!database) {
+    if (!(await databasePromise)) {
         await initializeDatabase();
     }
 };
@@ -61,7 +63,7 @@ export const setGeoMode = async (status: boolean): Promise<void> => {
     if (status) {
         const geo = new Geo();
         await geo.load();
-        await DatabaseFactory.createGeo(geo);
+        DatabaseFactory.createGeo(geo);
     } else {
         DatabaseFactory.clearGeo();
     }
