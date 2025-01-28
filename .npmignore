@@ -62,3 +62,5 @@ thai-address-universal.svg
 eslint.config.js
 
 Makefile
+
+jest.setup.js
