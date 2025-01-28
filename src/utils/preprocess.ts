@@ -1,5 +1,6 @@
-import { IExpanded } from '../thai-address.d';
-import { IDistrict, IProvince, ISubDistrict, IWord } from './preprocess.d';
+import { IExpanded } from '../types/thai-address.d';
+import { ensureGeo } from './helper';
+import { IDistrict, IProvince, ISubDistrict, IWord } from '../types/preprocess';
 
 /**
  * This function processes a nested data structure of provinces, districts, and sub-districts,
@@ -10,6 +11,10 @@ import { IDistrict, IProvince, ISubDistrict, IWord } from './preprocess.d';
  *               and each district contains an array of sub-districts.
  * @param words - An array of words used to map numeric indices in provinces, districts,
  *                and sub-districts to human-readable names.
+ * @param geos Optional 2D array of geo IDs, where each entry is an array of numbers representing
+ *             specific geographic identifiers (e.g., province, district, or sub-district) that
+ *             correspond to the locations in the data. These geo IDs can be used to filter or
+ *             match specific regions in the dataset.
  *
  * @returns An array of IExpanded objects, each containing:
  *          - province name
@@ -17,28 +22,43 @@ import { IDistrict, IProvince, ISubDistrict, IWord } from './preprocess.d';
  *          - sub-district name
  *          - postal code as a string
  */
-export const preprocess = (data: IProvince[], words: string[]): IExpanded[] => {
+export const preprocess = (
+    data: IProvince[],
+    words: string[],
+    geos: (number | boolean)[] = [],
+): IExpanded[] => {
     if (!data.length) {
         return [];
     }
 
     const expanded: IExpanded[] = [];
-    const i = 1;
-    data.forEach((provinces: IProvince) => {
-        (provinces[i] as IDistrict[]).forEach((districts: IDistrict) => {
-            (districts[i] as ISubDistrict[]).forEach(
-                (subDistricts: ISubDistrict) => {
-                    const entry: IExpanded = {
-                        province: words[provinces[0] as number],
-                        district: words[districts[0] as number],
-                        sub_district: words[subDistricts[0]],
-                        postal_code: subDistricts[1].toString(),
-                    };
-                    expanded.push(entry);
-                },
-            );
-        });
-    });
+    let geoIndex = geos.length > 0 ? 0 : -1;
+
+    for (const province of data) {
+        const provinceCode =
+            geoIndex !== -1 ? ensureGeo(geos[geoIndex++]) : undefined;
+        for (const district of province[1] as IDistrict[]) {
+            const districtCode =
+                geoIndex !== -1 ? ensureGeo(geos[geoIndex++]) : undefined;
+            for (const subDistrict of district[1] as ISubDistrict[]) {
+                const entry: IExpanded = {
+                    province: words[province[0] as number],
+                    district: words[district[0] as number],
+                    sub_district: words[subDistrict[0] as number],
+                    postal_code: subDistrict[1].toString(),
+                };
+
+                if (geoIndex !== -1) {
+                    entry.province_code = provinceCode;
+                    entry.district_code = districtCode;
+                    entry.sub_district_code = ensureGeo(geos[geoIndex++]);
+                }
+
+                expanded.push(entry);
+            }
+        }
+    }
+
     return expanded;
 };
 

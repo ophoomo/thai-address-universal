@@ -3,16 +3,31 @@ import {
     getProvinceAll,
     getDistrictByProvince,
     getSubDistrictByDistrict,
-    getPostalCodeByDistrict,
     searchAddressByProvince,
     searchAddressByDistrict,
     searchAddressBySubDistrict,
     searchAddressByPostalCode,
     splitAddress,
     translateWord,
-} from '../src/thai-address';
+    getEngMode,
+    getPostalCodeBySubDistrict,
+    getDatabase,
+} from '../src/core/thai-address';
 
 setEngMode(true);
+
+describe('getDatabase Function', () => {
+    it('should return database', async () => {
+        const result = await getDatabase();
+        expect(result.length).toBeGreaterThan(0);
+    });
+});
+
+describe('EngMode Tests', () => {
+    it('should return true', () => {
+        expect(getEngMode()).toBe(true);
+    });
+});
 
 describe('Province Tests', () => {
     it('should return all provinces (77 total)', async () => {
@@ -20,8 +35,8 @@ describe('Province Tests', () => {
         expect(result.length).toBe(77);
     });
 
-    it('should not return null when calling getProvinceAll', async () => {
-        const result = await getProvinceAll();
+    it('should not return null when calling getProvinceAll', () => {
+        const result = getProvinceAll();
         expect(result).not.toBeNull();
     });
 });
@@ -52,12 +67,12 @@ describe('Sub-District Tests', () => {
 
 describe('Postal Code Tests', () => {
     it('should return 1 postal code for "Tha Takiap"', async () => {
-        const result = await getPostalCodeByDistrict('Tha Takiap');
+        const result = await getPostalCodeBySubDistrict('Tha Takiap');
         expect(result.length).toBe(1);
     });
 
     it('should return an empty array when district name is empty', async () => {
-        const result = await getPostalCodeByDistrict('');
+        const result = await getPostalCodeBySubDistrict('');
         expect(result.length).toBe(0);
     });
 });

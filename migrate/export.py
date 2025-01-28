@@ -55,9 +55,9 @@ def export_word(data: List[Province], lookup: str, words: str, file_name: str) -
     # Export address data to JSON
     write_json(address_data.__dict__, file_name)
 
-def export_address(data: List[Province], file_name: str = 'db') -> None:
+def export_array(data: List[Province], file_name: str = 'db') -> None:
     """
-    Export address data to a JSON file.
+    Export array data to a JSON file.
     """
     print(f'Start Export {file_name} to JSON')
 

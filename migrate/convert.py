@@ -2,10 +2,12 @@ import json
 import os
 from typing import List, Dict, Any
 from database import ThaiDB, load_eng_database
-from pythainlp.transliterate import romanize
+from pythainlp.transliterate import romanize, pronunciate
 from pythainlp.tokenize import word_tokenize
 from collections import Counter
 import unicodedata
+import re
+
 
 class SubDistrict:
     def __init__(self, subdistrict_id: int, subdistrict_thai_name: str, subdistrict_eng_name: str, zip_code: int):
@@ -34,11 +36,33 @@ dict_words = Counter()
 words = Counter()
 new_dict = {}
 
+def has_thai(text):
+    thai_pattern = re.compile(r'[\u0E00-\u0E7F]')
+    return bool(thai_pattern.search(text))
+
 def text_thai_to_eng(old: str) -> str:
+    if not old.strip():
+        return ''
+
     result = eng_set.get(old, '')
     if not result:
-        result = romanize(old)
+        tokenize = word_tokenize(old)
+        for text in tokenize:
+            result += romanize(text).capitalize() + ' '
+        result = result.strip()
+        if has_thai(result):
+            result = pronunciate_mode(old)
+
     return result
+
+def pronunciate_mode(old: str) -> str:
+    result = ''
+    word = pronunciate(old).split('-')
+    for text in word:
+        result += romanize(text).capitalize() + ' '
+    result = result.strip()
+    return result
+
 
 def migration(thai_db: List[ThaiDB]) -> List[Province]:
     print('Start Convent ThaiDB to ThaiAddress Format')
@@ -291,4 +315,14 @@ def address_convert(data: List[Province]):
             'province_name': province_id,
             'districts': new_districts
         })
+    return new_data
+
+def geo_convert(data: List[Province]):
+    new_data = []
+    for province in data:
+        new_data.append(province.province_id)
+        for district in province.districts:
+            new_data.append(district.district_id)
+            for subdistrict in district.subdistricts:
+                new_data.append(subdistrict.subdistrict_id)
     return new_data

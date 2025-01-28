@@ -1,7 +1,7 @@
 export interface IWord {
-    data: string[];
-    lookup: string;
-    words: string;
+    data: string[] | number[];
+    lookup?: string;
+    words?: string;
 }
 
 export interface IProvince {

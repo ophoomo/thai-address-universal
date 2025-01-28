@@ -74,6 +74,10 @@ def load_eng_database():
         text[1] = ' '.join(text[1].split())
         data[text[0]] = text[1]
 
+
+    data['เกาะเสม็ด'] = 'Koh Samet'
+    data['ตาอ็อง'] = 'Ta Ong'
+
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 

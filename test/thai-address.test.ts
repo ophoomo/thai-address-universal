@@ -3,16 +3,31 @@ import {
     getProvinceAll,
     getDistrictByProvince,
     getSubDistrictByDistrict,
-    getPostalCodeByDistrict,
+    getPostalCodeBySubDistrict,
     searchAddressByProvince,
     searchAddressByDistrict,
     searchAddressBySubDistrict,
     searchAddressByPostalCode,
     splitAddress,
     translateWord,
-} from '../src/thai-address';
+    getEngMode,
+    getDatabase,
+} from '../src/core/thai-address';
 
 setEngMode(false);
+
+describe('getDatabase Function', () => {
+    it('should return database', async () => {
+        const result = await getDatabase();
+        expect(result.length).toBeGreaterThan(0);
+    });
+});
+
+describe('EngMode Tests', () => {
+    it('should return false', () => {
+        expect(getEngMode()).toBe(false);
+    });
+});
 
 describe('Province Tests', () => {
     it('should return all provinces (77 total)', async () => {
@@ -20,8 +35,8 @@ describe('Province Tests', () => {
         expect(result.length).toBe(77);
     });
 
-    it('should not return null when calling getProvinceAll', async () => {
-        const result = await getProvinceAll();
+    it('should not return null when calling getProvinceAll', () => {
+        const result = getProvinceAll();
         expect(result).not.toBeNull();
     });
 });
@@ -52,12 +67,12 @@ describe('Sub-District Tests', () => {
 
 describe('Postal Code Tests', () => {
     it('should return 1 postal code for "ท่าตะเกียบ"', async () => {
-        const result = await getPostalCodeByDistrict('ท่าตะเกียบ');
+        const result = await getPostalCodeBySubDistrict('ท่าตะเกียบ');
         expect(result.length).toBe(1);
     });
 
     it('should return an empty array when district name is empty', async () => {
-        const result = await getPostalCodeByDistrict('');
+        const result = await getPostalCodeBySubDistrict('');
         expect(result.length).toBe(0);
     });
 });
@@ -101,11 +116,11 @@ describe('Address Search Functions', () => {
     });
 
     it('should return results based on province "สระแก้ว"', async () => {
-        let result = await searchAddressByProvince('สระแก้ว');
-        expect(result.length).toBe(20);
+        let result = searchAddressByProvince('สระแก้ว');
+        expect((await result).length).toBe(20);
 
-        result = await searchAddressByProvince('สระแก้ว', 10);
-        expect(result.length).toBe(10);
+        result = searchAddressByProvince('สระแก้ว', 10);
+        expect((await result).length).toBe(10);
     });
 
     it('should return no results for non-existent province "อรัญประเทศ"', async () => {
@@ -114,14 +129,14 @@ describe('Address Search Functions', () => {
     });
 
     it('should return 15 results for postal code "27120"', async () => {
-        let result = await searchAddressByPostalCode('27120');
-        expect(result.length).toBe(15);
+        let result = searchAddressByPostalCode('27120');
+        expect((await result).length).toBe(15);
 
-        result = await searchAddressByPostalCode(27120);
-        expect(result.length).toBe(15);
+        result = searchAddressByPostalCode(27120);
+        expect((await result).length).toBe(15);
 
-        result = await searchAddressByPostalCode(27120, 5);
-        expect(result.length).toBe(5);
+        result = searchAddressByPostalCode(27120, 5);
+        expect((await result).length).toBe(5);
     });
 
     it('should return an empty array for empty postal code', async () => {
