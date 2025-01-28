@@ -1,4 +1,4 @@
-import { IExpanded, IExpandedWithPoint } from '../thai-address.d';
+import { IExpanded, IExpandedWithPoint } from '../types/thai-address.d';
 
 /**
  * An array of field names used to reference specific address components in the IExpanded object.

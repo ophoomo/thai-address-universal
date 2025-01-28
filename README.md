@@ -57,7 +57,23 @@ getProvince();
 ## ✨ Features
 
 ```typescript
-setEngMode (status: boolean): void
+getDatabase (): IExpanded[]
+```
+
+```typescript
+getGeoMode (): boolean
+```
+
+```typescript
+setGeoMode (status: boolean): Promise<void>
+```
+
+```typescript
+getEngMode (): boolean
+```
+
+```typescript
+setEngMode (status: boolean): Promise<void>
 ```
 
 ```typescript
@@ -93,7 +109,7 @@ searchAddressByPostalCode (searchStr: string | number, maxResult?: number): Prom
 ```
 
 ```typescript
-splitAddress (fullAddress: string): Promise<IExpanded>
+splitAddress (fullAddress: string): Promise<IExpanded | null>
 ```
 
 ```typescript

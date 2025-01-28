@@ -3,19 +3,31 @@ import {
     getProvinceAll,
     getDistrictByProvince,
     getSubDistrictByDistrict,
-    getPostalCodeByDistrict,
     searchAddressByProvince,
     searchAddressByDistrict,
     searchAddressBySubDistrict,
     searchAddressByPostalCode,
     splitAddress,
     translateWord,
-    loadEngDatabase,
-    resolveResultbyField,
-} from '../src/thai-address';
-import * as ThaiAddress from '../src/thai-address';
+    getEngMode,
+    getPostalCodeBySubDistrict,
+    getDatabase,
+} from '../src/core/thai-address';
 
 setEngMode(true);
+
+describe('getDatabase Function', () => {
+    it('should return database', async () => {
+        const result = await getDatabase();
+        expect(result.length).toBeGreaterThan(0);
+    });
+});
+
+describe('EngMode Tests', () => {
+    it('should return true', () => {
+        expect(getEngMode()).toBe(true);
+    });
+});
 
 describe('Province Tests', () => {
     it('should return all provinces (77 total)', async () => {
@@ -23,8 +35,8 @@ describe('Province Tests', () => {
         expect(result.length).toBe(77);
     });
 
-    it('should not return null when calling getProvinceAll', async () => {
-        const result = await getProvinceAll();
+    it('should not return null when calling getProvinceAll', () => {
+        const result = getProvinceAll();
         expect(result).not.toBeNull();
     });
 });
@@ -55,12 +67,12 @@ describe('Sub-District Tests', () => {
 
 describe('Postal Code Tests', () => {
     it('should return 1 postal code for "Tha Takiap"', async () => {
-        const result = await getPostalCodeByDistrict('Tha Takiap');
+        const result = await getPostalCodeBySubDistrict('Tha Takiap');
         expect(result.length).toBe(1);
     });
 
     it('should return an empty array when district name is empty', async () => {
-        const result = await getPostalCodeByDistrict('');
+        const result = await getPostalCodeBySubDistrict('');
         expect(result.length).toBe(0);
     });
 });
@@ -188,47 +200,5 @@ describe('Translate Word Function', () => {
 
         expect(resultLower).toBe('สระบุรี');
         expect(resultUpper).toBe('สระบุรี');
-    });
-});
-
-describe('Database Loading Errors', () => {
-    it('should log an error when Eng database loading fails', async () => {
-        const db = jest.mock('../migrate/output/en_db.json', () => {
-            throw new Error('Failed to load JSON');
-        });
-
-        const consoleErrorSpy = jest
-            .spyOn(console, 'error')
-            .mockImplementation();
-
-        await loadEngDatabase();
-
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            'Error loading English database',
-            expect.any(Error),
-        );
-        consoleErrorSpy.mockRestore();
-        db.restoreAllMocks();
-    });
-});
-
-describe('resolveResultbyField Function', () => {
-    it('should return empty array if error occurs during filtering', async () => {
-        const db = jest
-            .spyOn(ThaiAddress, 'db')
-            .mockRejectedValue(new Error('Database error'));
-        const consoleErrorSpy = jest
-            .spyOn(console, 'error')
-            .mockImplementation();
-
-        const result = await resolveResultbyField('province', 'Test', 3);
-
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            'Error during filtering:',
-            expect.any(Error),
-        );
-        expect(result).toEqual([]);
-        consoleErrorSpy.mockRestore();
-        db.mockRestore();
     });
 });

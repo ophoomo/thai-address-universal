@@ -7,9 +7,13 @@ export {
     getProvinceAll,
     getDistrictByProvince,
     getSubDistrictByDistrict,
-    getPostalCodeByDistrict,
+    getPostalCodeBySubDistrict,
+    getEngMode,
     setEngMode,
     translateWord,
-} from './thai-address';
+    getGeoMode,
+    setGeoMode,
+    getDatabase,
+} from './core/thai-address';
 
-export { IExpanded } from './thai-address.d';
+export { IExpanded } from './types/thai-address';

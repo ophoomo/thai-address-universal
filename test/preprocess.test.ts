@@ -1,4 +1,4 @@
-import { IProvince, IWord } from '../src/utils/preprocess.d';
+import { IProvince, IWord } from '../src/types/preprocess.d';
 import { preprocess, preprocess_word } from '../src/utils/preprocess';
 
 describe('Preprocess Word Test', () => {
@@ -97,6 +97,8 @@ describe('Preprocess Test', () => {
         ],
     ];
 
+    const geo: (number | boolean)[] = [10, 71, false, 1000, 2000];
+
     it('should transform text based on words and data for Thai Address', () => {
         const words = [
             'กระบี่',
@@ -121,5 +123,39 @@ describe('Preprocess Test', () => {
 
         const result = preprocess(data, words);
         expect(result.length).toBe(3);
+    });
+
+    it('should transform text based on words and data for Thai Address with Geo Data', () => {
+        const words = [
+            'กระบี่',
+            'คลองท่อม',
+            'คลองท่อมเหนือ',
+            'คลองท่อมใต้',
+            'คลองพน',
+        ];
+
+        const result = preprocess(data, words, geo);
+        expect(result.length).toBe(3);
+        expect(result[0].province_code).toBe('10');
+        expect(result[0].district_code).toBe('71');
+        expect(result[0].sub_district_code).toBe('');
+        expect(result[1].sub_district_code).toBe('1000');
+    });
+
+    it('should transform text based on words and data for Eng Address with Geo Data', () => {
+        const words = [
+            'Krabi',
+            'Khlong Thom',
+            'Khlong Thom Nuea',
+            'Khlong Thom Tai',
+            'Khlong Phon',
+        ];
+
+        const result = preprocess(data, words, geo);
+        expect(result.length).toBe(3);
+        expect(result[0].province_code).toBe('10');
+        expect(result[0].district_code).toBe('71');
+        expect(result[0].sub_district_code).toBe('');
+        expect(result[1].sub_district_code).toBe('1000');
     });
 });
