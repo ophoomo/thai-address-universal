@@ -11,7 +11,6 @@ import { IAddress } from '../types/address';
 import { ITranslate } from '../types/translate';
 
 let database: IDatabase;
-let databasePromise: Promise<IDatabase>;
 let search: ISearch;
 let address: IAddress;
 let translate: ITranslate;
@@ -22,20 +21,18 @@ let translate: ITranslate;
  * and initializes the search, address, and translate repositories.
  */
 const initializeDatabase = async (): Promise<void> => {
-    databasePromise = DatabaseFactory.createDatabase(getDefaultLanguage());
-    database = await databasePromise;
+    database = await DatabaseFactory.createDatabase(getDefaultLanguage());
     search = new SearchRepository(database);
     address = new Address(database);
     translate = new Translate();
 };
-initializeDatabase();
 
 /**
  * Ensures that the database is initialized before use.
  * If the database is not initialized yet, this function will call `initializeDatabase` to initialize it.
  */
 const ensureDatabaseInitialized = async (): Promise<void> => {
-    if (!(await databasePromise)) {
+    if (!database) {
         await initializeDatabase();
     }
 };

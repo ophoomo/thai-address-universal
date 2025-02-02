@@ -24,18 +24,13 @@ export const getDefaultLanguage = (): ILanguage => {
         typeof window !== 'undefined' &&
         typeof window.document !== 'undefined'
     ) {
-        return window.localStorage.getItem('THAI_ADDRESS_UNIVERSAL') === 'eng'
+        return localStorage.getItem('THAI_ADDRESS_UNIVERSAL') === 'eng'
             ? 'eng'
             : 'thai';
     }
-
-    if (
-        typeof process !== 'undefined' &&
-        process.versions != null &&
-        process.versions.node != null
-    ) {
-        return process.env.THAI_ADDRESS_UNIVERSAL === 'eng' ? 'eng' : 'thai';
-    }
-
-    return 'thai';
+    return typeof process !== 'undefined' &&
+        process.versions?.node != null &&
+        process.env.THAI_ADDRESS_UNIVERSAL === 'eng'
+        ? 'eng'
+        : 'thai';
 };

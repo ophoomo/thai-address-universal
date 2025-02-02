@@ -100,9 +100,14 @@ describe('Sub Districts with Multiple Postal Codes', () => {
 });
 
 describe('Address Search Functions', () => {
-    it('should return 1 result for district "อรัญประเทศ"', async () => {
+    it('should return 13 result for district "อรัญประเทศ"', async () => {
         const result = await searchAddressByDistrict('อรัญประเทศ');
         expect(result.length).toBe(13);
+    });
+
+    it('should return 10 result for district "ท่าตูม"', async () => {
+        const result = await searchAddressByDistrict('ท่าตูม');
+        expect(result.length).toBe(10);
     });
 
     it('should return an empty array for empty district name', async () => {
@@ -110,7 +115,7 @@ describe('Address Search Functions', () => {
         expect(result.length).toBe(0);
     });
 
-    it('should return 13 results for sub-district "อรัญประเทศ"', async () => {
+    it('should return 1 results for sub-district "อรัญประเทศ"', async () => {
         const result = await searchAddressBySubDistrict('อรัญประเทศ');
         expect(result.length).toBe(1);
     });
