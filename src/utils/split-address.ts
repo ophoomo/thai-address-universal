@@ -19,25 +19,16 @@ export const prepareAddress = (
     address: string,
     postal_code: string,
 ): string => {
-    [
-        postal_code,
-        'Thailand',
-        'ต.',
-        'อ.',
-        'จ.',
-        'ตำบล',
-        'อำเภอ',
-        'จังหวัด',
-        'แขวง',
-        'เขต',
-        'แขวง.',
-        'เขต.',
-    ].forEach((replacement) => {
-        address = address.replace(replacement, '');
-    });
-    [' กทม. ', ' กทม ', ' กรุงเทพ '].forEach((replacement) => {
-        address = address.replace(replacement, ' กรุงเทพมหานคร ');
-    });
+    const replacements = new RegExp(
+        `${postal_code}|Thailand|ต.|อ.|จ.|ตำบล|อำเภอ|จังหวัด|แขวง|เขต|แขวง.|เขต.|\\b(กทม|กรุงเทพ)\\b`,
+        'g',
+    );
+    address = address.replace(replacements, '');
+    address = address.replace(
+        /\b(กทม\.?|กรุงเทพฯ?|กรุงเทพ)\b/g,
+        'กรุงเทพมหานคร',
+    );
+
     return address.trim();
 };
 
@@ -74,14 +65,18 @@ export const getBestResult = (
     searchResult: IExpandedWithPoint[],
     address: string,
 ): IExpandedWithPoint | null => {
-    const scoredResults = searchResult.map((element) => ({
-        ...element,
-        point: calculateMatchPoints(element, address),
-    }));
+    let bestResult: IExpandedWithPoint | null = null;
+    let maxPoint = -1;
 
-    scoredResults.sort((a, b) => b.point! - a.point!);
+    for (const element of searchResult) {
+        const point = calculateMatchPoints(element, address);
+        if (point > maxPoint) {
+            maxPoint = point;
+            bestResult = { ...element, point };
+        }
+    }
 
-    return scoredResults[0]?.point === 3 ? scoredResults[0] : null;
+    return maxPoint === 3 ? bestResult : null;
 };
 
 /**

@@ -26,7 +26,6 @@ const initializeDatabase = async (): Promise<void> => {
     address = new Address(database);
     translate = new Translate();
 };
-initializeDatabase();
 
 /**
  * Ensures that the database is initialized before use.
@@ -61,7 +60,7 @@ export const setGeoMode = async (status: boolean): Promise<void> => {
     if (status) {
         const geo = new Geo();
         await geo.load();
-        await DatabaseFactory.createGeo(geo);
+        DatabaseFactory.createGeo(geo);
     } else {
         DatabaseFactory.clearGeo();
     }
