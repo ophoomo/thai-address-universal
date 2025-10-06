@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v5.0.0
+      rev: v6.0.0
       hooks:
           - id: trailing-whitespace
           - id: check-added-large-files
@@ -14,6 +14,6 @@ repos:
           - id: mixed-line-ending
           - id: check-merge-conflict
     - repo: https://github.com/gitleaks/gitleaks
-      rev: v8.22.1
+      rev: v8.28.0
       hooks:
           - id: gitleaks
