@@ -1,6 +1,6 @@
 {
     "name": "thai-address-universal",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": "Thai Address Universal is a TypeScript-based library derived from thai-address-database, offering improved performance and accurate type-checking for handling Thai address data.",
     "license": "ISC",
     "author": {
