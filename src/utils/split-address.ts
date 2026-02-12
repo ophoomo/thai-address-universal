@@ -6,6 +6,12 @@ import { IExpanded, IExpandedWithPoint } from '../types/thai-address.d';
  */
 const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
 
+// Pre-compiled regex patterns for better performance
+const LOCATION_ABBREVIATIONS =
+    /ต\.|อ\.|จ\.|ตำบล|อำเภอ|จังหวัด|แขวง|เขต|แขวง\.|เขต\./g;
+const BANGKOK_PATTERNS = /(กทม\.?|กรุงเทพฯ?|กรุงเทพ)/gi;
+const BANGKOK_REPLACEMENT = 'กรุงเทพมหานคร';
+
 /**
  * Prepares the address string by removing certain keywords and replacing specific abbreviations.
  * This function removes or replaces common terms, abbreviations, and the postal code from the address string to standardize it for further processing.
@@ -19,17 +25,16 @@ export const prepareAddress = (
     address: string,
     postal_code: string,
 ): string => {
+    // First replace Bangkok abbreviations before removing location abbreviations
+    const result = address.replace(BANGKOK_PATTERNS, BANGKOK_REPLACEMENT);
+
+    // Then remove other components
     const replacements = new RegExp(
-        `${postal_code}|Thailand|ต.|อ.|จ.|ตำบล|อำเภอ|จังหวัด|แขวง|เขต|แขวง.|เขต.|\\b(กทม|กรุงเทพ)\\b`,
+        `${postal_code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|Thailand|${LOCATION_ABBREVIATIONS.source}|\\b(กทม|กรุงเทพ)\\b`,
         'g',
     );
-    address = address.replace(replacements, '');
-    address = address.replace(
-        /\b(กทม\.?|กรุงเทพฯ?|กรุงเทพ)\b/g,
-        'กรุงเทพมหานคร',
-    );
 
-    return address.trim();
+    return result.replace(replacements, '').trim();
 };
 
 /**
@@ -45,10 +50,13 @@ export const calculateMatchPoints = (
     element: IExpandedWithPoint,
     address: string,
 ): number => {
-    const matches = fields.filter((field) =>
-        address.includes(element[field] as string),
-    );
-    return matches.length;
+    let matchCount = 0;
+    for (const field of fields) {
+        if (address.includes(element[field] as string)) {
+            matchCount++;
+        }
+    }
+    return matchCount;
 };
 
 /**
@@ -66,7 +74,7 @@ export const getBestResult = (
     address: string,
 ): IExpandedWithPoint | null => {
     let bestResult: IExpandedWithPoint | null = null;
-    let maxPoint = -1;
+    let maxPoint = 0;
 
     for (const element of searchResult) {
         const point = calculateMatchPoints(element, address);
@@ -90,11 +98,13 @@ export const getBestResult = (
  * @returns A cleaned-up address string with the specified components removed.
  */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    return fields
-        .reduce(
-            (acc, field) =>
-                acc.replace(new RegExp(`\\s${result[field]}`, 'g'), ''),
-            address,
-        )
-        .trim();
+    let cleaned = address;
+    for (const field of fields) {
+        const fieldValue = result[field];
+        if (fieldValue) {
+            // Use simple string replacement instead of RegExp for better performance
+            cleaned = cleaned.replace(` ${fieldValue}`, '');
+        }
+    }
+    return cleaned.trim();
 };

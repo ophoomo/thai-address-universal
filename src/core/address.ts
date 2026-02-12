@@ -3,8 +3,11 @@ import { IDatabase } from '../types/database';
 
 export class Address implements IAddress {
     private _cache = new Map<string, string[]>();
+    private _lastDatabaseName: string | null = null;
 
-    public constructor(private _database: IDatabase) {}
+    public constructor(private _database: IDatabase) {
+        this._lastDatabaseName = this._database.name;
+    }
 
     /**
      * Sets a new database instance.
@@ -12,6 +15,11 @@ export class Address implements IAddress {
      */
     public setDatabase(database: IDatabase): void {
         this._database = database;
+        // Clear cache when switching databases
+        if (this._lastDatabaseName !== database.name) {
+            this._cache.clear();
+            this._lastDatabaseName = database.name;
+        }
     }
 
     /**
@@ -20,15 +28,14 @@ export class Address implements IAddress {
      * @returns An array of province names.
      */
     public getProvinceAll = (): string[] => {
-        const key = this._database.name;
-        if (!this._cache.has(key)) {
-            const provinceSet = new Set<string>();
-            this._database
-                .getData()
-                .forEach((item) => provinceSet.add(item.province));
-            this._cache.set(key, Array.from(provinceSet));
+        const cacheKey = `provinces_${this._database.name}`;
+        if (!this._cache.has(cacheKey)) {
+            const provinces = Array.from(
+                new Set(this._database.getData().map((item) => item.province)),
+            );
+            this._cache.set(cacheKey, provinces);
         }
-        return this._cache.get(key) || [];
+        return this._cache.get(cacheKey) || [];
     };
 
     /**
@@ -37,14 +44,21 @@ export class Address implements IAddress {
      * @param province - The province to filter districts by.
      * @returns An array of district names.
      */
-    public getDistrictByProvince = (province: string): string[] =>
-        this.cacheResult(province, () => {
-            const districtSet = new Set<string>();
-            this._database.getData().forEach((item) => {
-                if (item.province === province) districtSet.add(item.district);
-            });
-            return districtSet;
-        });
+    public getDistrictByProvince = (province: string): string[] => {
+        const cacheKey = `districts_${this._database.name}_${province}`;
+        if (!this._cache.has(cacheKey)) {
+            const districts = Array.from(
+                new Set(
+                    this._database
+                        .getData()
+                        .filter((item) => item.province === province)
+                        .map((item) => item.district),
+                ),
+            );
+            this._cache.set(cacheKey, districts);
+        }
+        return this._cache.get(cacheKey) || [];
+    };
 
     /**
      * Retrieves sub-districts for a given district.
@@ -52,15 +66,21 @@ export class Address implements IAddress {
      * @param district - The district to filter sub-districts by.
      * @returns An array of sub-district names.
      */
-    public getSubDistrictByDistrict = (district: string): string[] =>
-        this.cacheResult(district, () => {
-            const subDistrictSet = new Set<string>();
-            this._database.getData().forEach((item) => {
-                if (item.district === district)
-                    subDistrictSet.add(item.sub_district);
-            });
-            return subDistrictSet;
-        });
+    public getSubDistrictByDistrict = (district: string): string[] => {
+        const cacheKey = `subdistricts_${this._database.name}_${district}`;
+        if (!this._cache.has(cacheKey)) {
+            const subDistricts = Array.from(
+                new Set(
+                    this._database
+                        .getData()
+                        .filter((item) => item.district === district)
+                        .map((item) => item.sub_district),
+                ),
+            );
+            this._cache.set(cacheKey, subDistricts);
+        }
+        return this._cache.get(cacheKey) || [];
+    };
 
     /**
      * Retrieves postal codes for a given sub-district.
@@ -68,29 +88,19 @@ export class Address implements IAddress {
      * @param sub_district - The sub-district to filter postal codes by.
      * @returns An array of postal codes.
      */
-    public getPostalCodeBySubDistrict = (sub_district: string): string[] =>
-        this.cacheResult(sub_district, () => {
-            const PostalCodeSet = new Set<string>();
-            this._database.getData().forEach((item) => {
-                if (item.sub_district === sub_district)
-                    PostalCodeSet.add(item.postal_code);
-            });
-            return PostalCodeSet;
-        });
-
-    /**
-     * Helper method to cache results of database queries.
-     * @param key - The cache key (e.g., province, district, sub-district).
-     * @param fetchFunc - A function to fetch data if not already cached.
-     * @returns An array of results from the cache or the database.
-     */
-    private cacheResult = (
-        key: string,
-        fetchFunc: () => Set<string>,
-    ): string[] => {
-        if (!this._cache.has(key)) {
-            this._cache.set(key, Array.from(fetchFunc()));
+    public getPostalCodeBySubDistrict = (sub_district: string): string[] => {
+        const cacheKey = `postalcodes_${this._database.name}_${sub_district}`;
+        if (!this._cache.has(cacheKey)) {
+            const postalCodes = Array.from(
+                new Set(
+                    this._database
+                        .getData()
+                        .filter((item) => item.sub_district === sub_district)
+                        .map((item) => item.postal_code),
+                ),
+            );
+            this._cache.set(cacheKey, postalCodes);
         }
-        return this._cache.get(key) || [];
+        return this._cache.get(cacheKey) || [];
     };
 }
