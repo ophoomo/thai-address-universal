@@ -50,12 +50,20 @@ class Database implements IDatabase {
      * If words are not loaded, loads them first
      */
     public async load(): Promise<void> {
-        if (this.words.length === 0) await this.loadWord();
-        this.data = preprocess(
-            ThaiAddressDB as IProvince[],
-            this.words,
-            this.geo?.getData(),
-        );
+        try {
+            if (this.words.length === 0) {
+                await this.loadWord();
+            }
+            this.data = preprocess(
+                ThaiAddressDB as IProvince[],
+                this.words,
+                this.geo?.getData(),
+            );
+        } catch (error) {
+            console.error('Error loading database:', error);
+            this.data = [];
+            this.words = [];
+        }
     }
 
     /**
@@ -89,7 +97,7 @@ export class EngDatabase extends Database {
 }
 
 export class DatabaseFactory {
-    private static instances: { [key: string]: IDatabase } = {};
+    private static instances: Map<string, IDatabase> = new Map();
     private static geo: IGeo | null = null;
 
     /**
@@ -98,46 +106,58 @@ export class DatabaseFactory {
      * @returns Promise<IDatabase>
      */
     static async createDatabase(language: ILanguage): Promise<IDatabase> {
-        if (!DatabaseFactory.instances[language]) {
-            if (language === 'thai') {
-                DatabaseFactory.instances[language] = new ThaiDatabase();
-            } else {
-                DatabaseFactory.instances[language] = new EngDatabase();
-            }
-            if (this.geo !== null) {
-                await DatabaseFactory.instances[language].setGeo(this.geo);
-            } else {
-                await DatabaseFactory.instances[language].load();
-            }
+        const cachedInstance = DatabaseFactory.instances.get(language);
+        if (cachedInstance) {
+            return cachedInstance;
         }
-        return DatabaseFactory.instances[language];
+
+        try {
+            const instance =
+                language === 'thai' ? new ThaiDatabase() : new EngDatabase();
+
+            if (this.geo !== null) {
+                await instance.setGeo(this.geo);
+            } else {
+                await instance.load();
+            }
+
+            DatabaseFactory.instances.set(language, instance);
+            return instance;
+        } catch (error) {
+            console.error(`Error creating ${language} database:`, error);
+            throw error;
+        }
     }
 
     /**
      * Sets geo data for all existing database instances
      * @param geo IGeo - The geo data to be set
      */
-    static createGeo(geo: IGeo) {
+    static createGeo(geo: IGeo): void {
         this.geo = geo;
-        for (const key in DatabaseFactory.instances) {
-            DatabaseFactory.instances[key].setGeo(geo);
+        for (const instance of DatabaseFactory.instances.values()) {
+            instance.setGeo(geo).catch((error) => {
+                console.error('Error setting geo data:', error);
+            });
         }
     }
 
     /**
      * Clears geo data from all database instances
      */
-    static clearGeo() {
+    static clearGeo(): void {
         this.geo = null;
-        for (const key in DatabaseFactory.instances) {
-            DatabaseFactory.instances[key].setGeo(undefined);
+        for (const instance of DatabaseFactory.instances.values()) {
+            instance.setGeo(undefined).catch((error) => {
+                console.error('Error clearing geo data:', error);
+            });
         }
     }
 
     /**
      * Clears all database instances
      */
-    static clearInstances() {
-        DatabaseFactory.instances = {};
+    static clearInstances(): void {
+        DatabaseFactory.instances.clear();
     }
 }

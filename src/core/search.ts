@@ -8,7 +8,12 @@ import {
 } from '../utils/split-address';
 
 export class SearchRepository implements ISearch {
-    public constructor(private _database: IDatabase) {}
+    private _searchCache = new Map<string, IExpanded[]>();
+    private _lastDatabaseName: string | null = null;
+
+    public constructor(private _database: IDatabase) {
+        this._lastDatabaseName = this._database.name;
+    }
 
     /**
      * Updates the database instance used for searching.
@@ -16,6 +21,11 @@ export class SearchRepository implements ISearch {
      */
     public setDatabase(database: IDatabase): void {
         this._database = database;
+        // Clear cache when switching databases
+        if (this._lastDatabaseName !== database.name) {
+            this._searchCache.clear();
+            this._lastDatabaseName = database.name;
+        }
     }
 
     /**
@@ -135,21 +145,32 @@ export class SearchRepository implements ISearch {
         maxResult: number = 20,
     ): IExpanded[] {
         // Normalize the search string
-        searchStr = searchStr.toString().trim().toLowerCase();
-        if (searchStr === '') return [];
+        const normalizedSearch = searchStr.toString().trim().toLowerCase();
+        if (normalizedSearch === '') return [];
+
+        // Create cache key with field and search parameters
+        const cacheKey = `${type}_${normalizedSearch}_${maxResult}_${this._database.name}`;
+
+        if (this._searchCache.has(cacheKey)) {
+            return this._searchCache.get(cacheKey) || [];
+        }
 
         try {
-            // Filter the database data based on the search string and field
-            return this._database
+            // Filter and limit results in a single pass
+            const results = this._database
                 .getData()
                 .filter((item) =>
                     (item[type] || '')
                         .toString()
                         .trim()
                         .toLowerCase()
-                        .includes(searchStr),
+                        .includes(normalizedSearch),
                 )
-                .slice(0, maxResult); // Limit the results to the specified maximum
+                .slice(0, maxResult);
+
+            // Cache the results
+            this._searchCache.set(cacheKey, results);
+            return results;
         } catch (e) {
             console.error('Error during filtering:', e);
             return [];

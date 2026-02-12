@@ -27,19 +27,22 @@ export const preprocess = (
     words: string[],
     geos: (number | boolean)[] = [],
 ): IExpanded[] => {
-    if (!data.length) {
+    if (!data.length || !words.length) {
         return [];
     }
 
     const expanded: IExpanded[] = [];
-    let geoIndex = geos.length > 0 ? 0 : -1;
+    const hasGeo = geos.length > 0;
+    let geoIndex = 0;
 
     for (const province of data) {
-        const provinceCode =
-            geoIndex !== -1 ? ensureGeo(geos[geoIndex++]) : undefined;
+        const provinceCode = hasGeo ? ensureGeo(geos[geoIndex++]) : undefined;
+
         for (const district of province[1] as IDistrict[]) {
-            const districtCode =
-                geoIndex !== -1 ? ensureGeo(geos[geoIndex++]) : undefined;
+            const districtCode = hasGeo
+                ? ensureGeo(geos[geoIndex++])
+                : undefined;
+
             for (const subDistrict of district[1] as ISubDistrict[]) {
                 const entry: IExpanded = {
                     province: words[province[0] as number],
@@ -48,7 +51,7 @@ export const preprocess = (
                     postal_code: subDistrict[1].toString(),
                 };
 
-                if (geoIndex !== -1) {
+                if (hasGeo) {
                     entry.province_code = provinceCode;
                     entry.district_code = districtCode;
                     entry.sub_district_code = ensureGeo(geos[geoIndex++]);
@@ -75,41 +78,47 @@ export const preprocess_word = (
     data: IWord,
     eng: boolean = false,
 ): string[] => {
-    if (!data.data.length) {
+    if (!data.data?.length) {
         return [];
     }
 
-    const lookup = data.lookup?.split('|') || [];
-    const words = data.words?.split('|') || [];
+    const lookup = data.lookup?.split('|') ?? [];
+    const words = data.words?.split('|') ?? [];
     const useLookup = lookup.length > 0 && words.length > 0;
 
     /**
      * The `repl` function is used to replace a character with its mapped value from the `words` array.
      * @param m The character to be transformed.
-     * @param eng If true, uses the English mapping from `words`, otherwise uses Thai mapping.
+     * @param isEnglish If true, uses the English mapping from `words`, otherwise uses Thai mapping.
      * @returns The transformed character.
      */
-    const repl = (m: string, eng: boolean): string => {
+    const repl = (m: string, isEnglish: boolean): string => {
         const ch = m.charCodeAt(0);
-        return eng ? words[ch - 3585] : words[ch < 97 ? ch - 65 : 26 + ch - 97];
+        return isEnglish
+            ? words[ch - 3585]
+            : words[ch < 97 ? ch - 65 : 26 + ch - 97];
     };
+
+    // Pre-compile regex patterns
+    const thaiCharRegex = /[ก-ฮ]/g;
+    const englishCharRegex = /[a-zA-Z]/g;
 
     /**
      * The `t` function is used to transform the text by replacing characters based on the `lookup` or `words` data.
      * @param text The text to be transformed.
-     * @param eng If true, the function processes English characters; otherwise, it processes Thai.
+     * @param isEnglish If true, the function processes English characters; otherwise, it processes Thai.
      * @returns The transformed text.
      */
-    const t = (text: string | number, eng: boolean): string => {
+    const t = (text: string | number, isEnglish: boolean): string => {
         if (!useLookup) {
             return text.toString();
         }
-        if (typeof text === 'number') {
-            text = lookup[text];
-        }
-        return eng
-            ? text.replace(/[ก-ฮ]/gi, (m) => repl(m, eng))
-            : text.replace(/[a-zA-Z]/gi, (m) => repl(m, eng));
+
+        let transformedText =
+            typeof text === 'number' ? lookup[text] : String(text);
+
+        const charRegex = isEnglish ? thaiCharRegex : englishCharRegex;
+        return transformedText.replace(charRegex, (m) => repl(m, isEnglish));
     };
 
     return data.data.map((item) => t(item, eng));

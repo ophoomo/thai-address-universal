@@ -1,6 +1,27 @@
 import { ILanguage } from '../types/database';
 
 /**
+ * Checks if code is running in a browser environment.
+ * @returns true if running in browser, false otherwise
+ */
+const isBrowser = (): boolean =>
+    typeof window !== 'undefined' && typeof window.document !== 'undefined';
+
+/**
+ * Gets the stored language preference from the environment.
+ * @returns The stored language value ('eng' or null/undefined)
+ */
+const getStoredLanguage = (): string | null => {
+    if (isBrowser()) {
+        return localStorage.getItem('THAI_ADDRESS_UNIVERSAL');
+    }
+    if (typeof process !== 'undefined' && process.versions?.node != null) {
+        return process.env.THAI_ADDRESS_UNIVERSAL ?? null;
+    }
+    return null;
+};
+
+/**
  * Ensures that the input is returned as a string.
  * If the input is a number, it is converted to a string.
  * If the input is a boolean, an empty string is returned.
@@ -20,17 +41,5 @@ export const ensureGeo = (data: number | boolean): string => {
  * @returns ILanguage - The default language ('thai' or 'eng').
  */
 export const getDefaultLanguage = (): ILanguage => {
-    if (
-        typeof window !== 'undefined' &&
-        typeof window.document !== 'undefined'
-    ) {
-        return localStorage.getItem('THAI_ADDRESS_UNIVERSAL') === 'eng'
-            ? 'eng'
-            : 'thai';
-    }
-    return typeof process !== 'undefined' &&
-        process.versions?.node != null &&
-        process.env.THAI_ADDRESS_UNIVERSAL === 'eng'
-        ? 'eng'
-        : 'thai';
+    return getStoredLanguage() === 'eng' ? 'eng' : 'thai';
 };
