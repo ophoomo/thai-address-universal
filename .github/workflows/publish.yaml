@@ -1,36 +1,39 @@
 name: Publish Package to npmjs
 
 on:
-    release:
-        types: [published]
+  release:
+    types: [published]
 
 defaults:
-    run:
-        shell: bash
+  run:
+    shell: bash
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            id-token: write
-        steps:
-            - uses: actions/checkout@v5
-            - uses: actions/setup-node@v6
-              with:
-                  node-version: '22.x'
-                  registry-url: 'https://registry.npmjs.org'
+  build:
+    runs-on: ubuntu-latest
 
-            - name: Install packages
-              run: npm ci
+    permissions:
+      contents: read
+      id-token: write
 
-            - name: Build Code
-              run: npm run build
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
-            - name: Test
-              run: npm run test
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
 
-            - name: Publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-              run: npm publish --provenance --access public
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Publish to npm
+        run: npm publish --access public
