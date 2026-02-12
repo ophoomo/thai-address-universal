@@ -9,7 +9,7 @@ const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
 // Pre-compiled regex patterns for better performance
 const LOCATION_ABBREVIATIONS =
     /ต\.|อ\.|จ\.|ตำบล|อำเภอ|จังหวัด|แขวง|เขต|แขวง\.|เขต\./g;
-const BANGKOK_PATTERNS = /\b(กทม\.?|กรุงเทพฯ?|กรุงเทพ)\b/gi;
+const BANGKOK_PATTERNS = /(กทม\.?|กรุงเทพฯ?|กรุงเทพ)/gi;
 const BANGKOK_REPLACEMENT = 'กรุงเทพมหานคร';
 
 /**
@@ -25,16 +25,16 @@ export const prepareAddress = (
     address: string,
     postal_code: string,
 ): string => {
-    // Use pre-built base pattern with the postal code
+    // First replace Bangkok abbreviations before removing location abbreviations
+    const result = address.replace(BANGKOK_PATTERNS, BANGKOK_REPLACEMENT);
+
+    // Then remove other components
     const replacements = new RegExp(
         `${postal_code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|Thailand|${LOCATION_ABBREVIATIONS.source}|\\b(กทม|กรุงเทพ)\\b`,
         'g',
     );
 
-    return address
-        .replace(replacements, '')
-        .replace(BANGKOK_PATTERNS, BANGKOK_REPLACEMENT)
-        .trim();
+    return result.replace(replacements, '').trim();
 };
 
 /**

@@ -114,7 +114,7 @@ export const preprocess_word = (
             return text.toString();
         }
 
-        let transformedText =
+        const transformedText =
             typeof text === 'number' ? lookup[text] : String(text);
 
         const charRegex = isEnglish ? thaiCharRegex : englishCharRegex;
