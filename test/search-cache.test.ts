@@ -1,5 +1,5 @@
 import { SearchRepository } from '../src/core/search';
-import { IDatabase } from '../src/types/database';
+import type { IDatabase } from '../src/types/database';
 
 describe('SearchRepository - Cache and Error Handling', () => {
     let searchRepository: SearchRepository;
@@ -48,18 +48,18 @@ describe('SearchRepository - Cache and Error Handling', () => {
             mockDatabase.name = 'thai';
             const getDataSpy = jest.spyOn(mockDatabase, 'getData');
 
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
             getDataSpy.mockClear();
 
             // Second call should use cache
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             expect(getDataSpy).not.toHaveBeenCalled();
         });
 
         it('should clear cache when database is switched', () => {
             mockDatabase.name = 'thai';
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             // Switch database
             const newMockDatabase = {
@@ -75,7 +75,7 @@ describe('SearchRepository - Cache and Error Handling', () => {
             const getDataSpy = jest.spyOn(newMockDatabase, 'getData');
 
             // Should fetch from new database, not use old cache
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             expect(getDataSpy).toHaveBeenCalled();
         });
@@ -84,11 +84,11 @@ describe('SearchRepository - Cache and Error Handling', () => {
             mockDatabase.name = 'thai';
             const getDataSpy = jest.spyOn(mockDatabase, 'getData');
 
-            searchRepository['resolveResultbyField']('province', 'Bangkok', 1);
+            searchRepository.resolveResultbyField('province', 'Bangkok', 1);
             getDataSpy.mockClear();
 
             // Different maxResult should not use cache
-            searchRepository['resolveResultbyField']('province', 'Bangkok', 2);
+            searchRepository.resolveResultbyField('province', 'Bangkok', 2);
 
             expect(getDataSpy).toHaveBeenCalled();
         });
@@ -97,7 +97,7 @@ describe('SearchRepository - Cache and Error Handling', () => {
     describe('setDatabase - cache clearing on language switch', () => {
         it('should clear cache when switching to different language', () => {
             mockDatabase.name = 'thai';
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             const newMockDatabase = {
                 name: 'eng',
@@ -112,14 +112,14 @@ describe('SearchRepository - Cache and Error Handling', () => {
             const getDataSpy = jest.spyOn(newMockDatabase, 'getData');
 
             // Query with same parameters should not use cache
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             expect(getDataSpy).toHaveBeenCalled();
         });
 
         it('should not clear cache when switching to same language', () => {
             mockDatabase.name = 'thai';
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             const sameMockDatabase = {
                 name: 'thai',
@@ -134,7 +134,7 @@ describe('SearchRepository - Cache and Error Handling', () => {
             const getDataSpy = jest.spyOn(sameMockDatabase, 'getData');
 
             // Should use cache
-            searchRepository['resolveResultbyField']('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok');
 
             expect(getDataSpy).not.toHaveBeenCalled();
         });
@@ -147,7 +147,7 @@ describe('SearchRepository - Cache and Error Handling', () => {
                 throw new Error('Database error');
             });
 
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'Bangkok',
             );
@@ -163,14 +163,14 @@ describe('SearchRepository - Cache and Error Handling', () => {
     describe('Cache get fallback', () => {
         it('should return cached empty array result', () => {
             // First search returns no results
-            const results1 = searchRepository['resolveResultbyField'](
+            const results1 = searchRepository.resolveResultbyField(
                 'province',
                 'NonExistent',
             );
             expect(results1).toEqual([]);
 
             // Second call should return cached empty array
-            const results2 = searchRepository['resolveResultbyField'](
+            const results2 = searchRepository.resolveResultbyField(
                 'province',
                 'NonExistent',
             );

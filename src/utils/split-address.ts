@@ -1,110 +1,146 @@
-import { IExpanded, IExpandedWithPoint } from '../types/thai-address.d';
+import {
+    ADDRESS_COMPONENT_FIELDS,
+    ADDRESS_COMPONENT_PREFIX_PATTERN,
+    BANGKOK_ALIAS_PATTERN,
+    BANGKOK_CANONICAL_NAME,
+    escapeRegExp,
+    NOISE_TOKEN_PATTERN,
+} from '../constants';
+import type { IExpanded, IExpandedWithPoint } from '../types/thai-address';
 
 /**
- * An array of field names used to reference specific address components in the IExpanded object.
- * This array contains the keys of the IExpanded interface that represent the district, sub-district, and province.
- */
-const fields: (keyof IExpanded)[] = ['district', 'sub_district', 'province'];
-
-// Pre-compiled regex patterns for better performance
-const LOCATION_ABBREVIATIONS =
-    /ต\.|อ\.|จ\.|ตำบล|อำเภอ|จังหวัด|แขวง|เขต|แขวง\.|เขต\./g;
-const BANGKOK_PATTERNS = /(กทม\.?|กรุงเทพฯ?|กรุงเทพ)/gi;
-const BANGKOK_REPLACEMENT = 'กรุงเทพมหานคร';
-
-/**
- * Prepares the address string by removing certain keywords and replacing specific abbreviations.
- * This function removes or replaces common terms, abbreviations, and the postal code from the address string to standardize it for further processing.
+ * Normalises a free-text address before matching:
+ *  1. every way of writing Bangkok collapses to its canonical name;
+ *  2. the postal code, filler tokens and component prefixes ("ต.", "จังหวัด", …)
+ *     are removed.
  *
- * @param address - The full address string to be prepared.
- * @param postal_code - The postal code code to be removed from the address.
- *
- * @returns The cleaned and standardized address string with the specified terms and postal code removed.
+ * @param address - The raw address string.
+ * @param postalCode - The postal code already extracted from it.
+ * @returns The trimmed remainder, ready for {@link getBestResult}.
  */
-export const prepareAddress = (
-    address: string,
-    postal_code: string,
-): string => {
-    // First replace Bangkok abbreviations before removing location abbreviations
-    const result = address.replace(BANGKOK_PATTERNS, BANGKOK_REPLACEMENT);
+export const prepareAddress = (address: string, postalCode: string): string => {
+    const withCanonicalBangkok = address.replace(
+        BANGKOK_ALIAS_PATTERN,
+        BANGKOK_CANONICAL_NAME,
+    );
 
-    // Then remove other components
-    const replacements = new RegExp(
-        `${postal_code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|Thailand|${LOCATION_ABBREVIATIONS.source}|\\b(กทม|กรุงเทพ)\\b`,
+    const removable = new RegExp(
+        [
+            escapeRegExp(postalCode),
+            NOISE_TOKEN_PATTERN.source,
+            ADDRESS_COMPONENT_PREFIX_PATTERN.source,
+        ].join('|'),
         'g',
     );
 
-    return result.replace(replacements, '').trim();
+    return withCanonicalBangkok.replace(removable, '').trim();
 };
 
 /**
- * Calculates the match points for a given address based on the number of address components that match.
- * This function compares the provided address against the elements' fields and counts how many fields in the element match the address.
- *
- * @param element - An address object (IExpandedWithPoint) containing various address components.
- * @param address - The address string to compare with the fields of the element.
- *
- * @returns The number of matching fields (match points) between the address and the element.
+ * Number of address components ({@link ADDRESS_COMPONENT_FIELDS}) of `element`
+ * that appear anywhere in `address`. A row needs all of them present to be a
+ * candidate in {@link getBestResult}.
  */
 export const calculateMatchPoints = (
     element: IExpandedWithPoint,
     address: string,
 ): number => {
-    let matchCount = 0;
-    for (const field of fields) {
-        if (address.includes(element[field] as string)) {
-            matchCount++;
+    let points = 0;
+    for (const field of ADDRESS_COMPONENT_FIELDS) {
+        if (address.includes(element[field])) {
+            points++;
         }
     }
-    return matchCount;
+    return points;
 };
 
 /**
- * Determines the best matching address from the search results based on a calculated match score.
- * This function calculates match points for each address in the search results, sorts them by score,
- * and returns the highest-scored result if it meets a minimum threshold.
+ * Counts how many distinct whitespace-separated words of `address` are
+ * explained by this row's components.
  *
- * @param searchResult - An array of address objects with match points to be evaluated.
- * @param address - The address string to compare against the search results.
+ * A row that maps its sub-district and district onto two different words
+ * accounts for more of the address than one that reuses a single word for
+ * both — which is exactly what happens when a district has a same-named
+ * sub-district.
+ */
+const distinctWordsCovered = (
+    element: IExpandedWithPoint,
+    words: string[],
+): number => {
+    const covered = new Set<string>();
+    for (const field of ADDRESS_COMPONENT_FIELDS) {
+        const value = element[field];
+        for (const word of words) {
+            if (
+                word === value ||
+                word.includes(value) ||
+                value.includes(word)
+            ) {
+                covered.add(word);
+            }
+        }
+    }
+    return covered.size;
+};
+
+/**
+ * Picks the row that best matches `address` from the rows sharing its postal
+ * code.
  *
- * @returns The best matching address (IExpandedWithPoint) if the highest score is 3, or null if no match meets the threshold.
+ * Any row whose district, sub-district and province all appear in `address` is
+ * a candidate. Ties (a district with a same-named sub-district, or several
+ * sub-districts of one district on the same postal code) are broken by, in
+ * order: most distinct words of the address covered, then whether the
+ * sub-district stands alone as a word.
+ *
+ * @returns The winning row with its `point` score, or `null` when no row has
+ *          all three components present.
  */
 export const getBestResult = (
     searchResult: IExpandedWithPoint[],
     address: string,
 ): IExpandedWithPoint | null => {
-    let bestResult: IExpandedWithPoint | null = null;
-    let maxPoint = 0;
+    const candidates = searchResult
+        .map((element) => ({
+            ...element,
+            point: calculateMatchPoints(element, address),
+        }))
+        .filter((element) => element.point === ADDRESS_COMPONENT_FIELDS.length);
 
-    for (const element of searchResult) {
-        const point = calculateMatchPoints(element, address);
-        if (point > maxPoint) {
-            maxPoint = point;
-            bestResult = { ...element, point };
-        }
+    if (candidates.length === 0) {
+        return null;
+    }
+    if (candidates.length === 1) {
+        return candidates[0];
     }
 
-    return maxPoint === 3 ? bestResult : null;
+    const words = address.split(/\s+/).filter(Boolean);
+    const subDistrictIsOwnWord = (element: IExpandedWithPoint): number =>
+        words.includes(element.sub_district) ? 1 : 0;
+
+    // `sort` is stable, so a full tie preserves the original row order.
+    return [...candidates].sort(
+        (a, b) =>
+            distinctWordsCovered(b, words) - distinctWordsCovered(a, words) ||
+            subDistrictIsOwnWord(b) - subDistrictIsOwnWord(a),
+    )[0];
 };
 
 /**
- * Cleans up the address by removing specific address components from the address string.
- * This function iterates over a list of fields and removes any occurrences of the corresponding values from the address string.
- * The result is a cleaned-up address with those components removed.
+ * Removes the matched components of `result` from `address`, leaving only the
+ * house number / street / village part.
  *
- * @param address - The full address string to be cleaned up.
- * @param result - An object containing address components to be removed from the full address.
- *
- * @returns A cleaned-up address string with the specified components removed.
+ * @param address - The prepared address string.
+ * @param result - The row {@link getBestResult} chose.
+ * @returns The trimmed remainder.
  */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    let cleaned = address;
-    for (const field of fields) {
-        const fieldValue = result[field];
-        if (fieldValue) {
-            // Use simple string replacement instead of RegExp for better performance
-            cleaned = cleaned.replace(` ${fieldValue}`, '');
+    let remainder = address;
+    for (const field of ADDRESS_COMPONENT_FIELDS) {
+        const value = result[field];
+        if (value) {
+            remainder = remainder.replace(` ${value}`, '');
         }
     }
-    return cleaned.trim();
+    return remainder.trim();
 };

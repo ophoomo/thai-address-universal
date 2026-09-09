@@ -1,124 +1,63 @@
 import { Address } from '../src/core/address';
-import { IDatabase } from '../src/types/database';
+import type { IDatabase } from '../src/types/database';
+import type { IExpanded } from '../src/types/thai-address';
 
-describe('Address - Cache get fallback coverage', () => {
-    let address: Address;
-    let mockDatabase: IDatabase;
+const makeDatabase = (name: IDatabase['name'], rows: IExpanded[]): IDatabase =>
+    ({
+        name,
+        getData: jest.fn(() => rows),
+        getWord: jest.fn(() => []),
+        getGeo: jest.fn(() => undefined),
+        load: jest.fn(),
+        setGeo: jest.fn(),
+    }) as unknown as IDatabase;
 
-    beforeEach(() => {
-        mockDatabase = {
-            name: 'thai',
-            getData: jest.fn(() => []),
-            getWord: jest.fn(() => []),
-            getGeo: jest.fn(() => undefined),
-            load: jest.fn(),
-            setGeo: jest.fn(),
-        } as unknown as IDatabase;
+const ROW: IExpanded = {
+    province: 'A',
+    district: 'B',
+    sub_district: 'C',
+    postal_code: '10000',
+};
 
-        address = new Address(mockDatabase);
+describe('Address', () => {
+    it('returns an empty array for every level when the dataset is empty', () => {
+        const address = new Address(makeDatabase('thai', []));
+        expect(address.getProvinceAll()).toEqual([]);
+        expect(address.getDistrictByProvince('X')).toEqual([]);
+        expect(address.getSubDistrictByDistrict('X')).toEqual([]);
+        expect(address.getPostalCodeBySubDistrict('X')).toEqual([]);
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
+    it('deduplicates values and narrows by the parent', () => {
+        const address = new Address(
+            makeDatabase('thai', [
+                ROW,
+                { ...ROW, sub_district: 'C2' },
+                { ...ROW, province: 'A2', district: 'B2', sub_district: 'C3' },
+            ]),
+        );
+        expect(address.getProvinceAll()).toEqual(['A', 'A2']);
+        expect(address.getDistrictByProvince('A')).toEqual(['B']);
+        expect(address.getSubDistrictByDistrict('B')).toEqual(['C', 'C2']);
+        expect(address.getPostalCodeBySubDistrict('C')).toEqual(['10000']);
     });
 
-    describe('Cache get fallback - || []', () => {
-        it('should handle cache.get() returning undefined and return empty array', () => {
-            // Manually set a cache entry to undefined (edge case)
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            cache.set('provinces_thai', []);
+    it('memoises each distinct list until the dataset changes', () => {
+        const db = makeDatabase('thai', [ROW]);
+        const address = new Address(db);
 
-            // Clear the cache to simulate a scenario where get returns undefined
-            cache.delete('provinces_thai');
+        const first = address.getProvinceAll();
+        expect(address.getProvinceAll()).toBe(first); // same reference => cached
+        expect(db.getData).toHaveBeenCalledTimes(1);
 
-            const results = address.getProvinceAll();
-            expect(results).toEqual([]);
-        });
+        // Same language: cache is kept.
+        address.setDatabase(makeDatabase('thai', [ROW]));
+        expect(address.getProvinceAll()).toBe(first);
 
-        it('should handle getDistrictByProvince cache miss with empty database', () => {
-            const results = address.getDistrictByProvince('NonExistent');
-            expect(results).toEqual([]);
-
-            // Second call should return cached empty array
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            expect(cache.get('districts_thai_NonExistent')).toEqual([]);
-        });
-
-        it('should handle getSubDistrictByDistrict cache miss with empty database', () => {
-            const results = address.getSubDistrictByDistrict('NonExistent');
-            expect(results).toEqual([]);
-
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            expect(cache.get('subdistricts_thai_NonExistent')).toEqual([]);
-        });
-
-        it('should handle getPostalCodeBySubDistrict cache miss with empty database', () => {
-            const results = address.getPostalCodeBySubDistrict('NonExistent');
-            expect(results).toEqual([]);
-
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            expect(cache.get('postalcodes_thai_NonExistent')).toEqual([]);
-        });
-
-        it('should return [] when cache entry exists but value is undefined (provinces)', () => {
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            // create a key with explicit undefined value
-            (cache as unknown as Map<string, string[] | undefined>).set(
-                'provinces_thai',
-                undefined,
-            );
-
-            const res = address.getProvinceAll();
-            expect(res).toEqual([]);
-        });
-
-        it('should return [] when cache entry exists but value is undefined (districts)', () => {
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            (cache as unknown as Map<string, string[] | undefined>).set(
-                'districts_thai_Empty',
-                undefined,
-            );
-
-            const res = address.getDistrictByProvince('Empty');
-            expect(res).toEqual([]);
-        });
-
-        it('should return [] when cache entry exists but value is undefined (subdistricts)', () => {
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            (cache as unknown as Map<string, string[] | undefined>).set(
-                'subdistricts_thai_Empty',
-                undefined,
-            );
-
-            const res = address.getSubDistrictByDistrict('Empty');
-            expect(res).toEqual([]);
-        });
-
-        it('should return [] when cache entry exists but value is undefined (postalcodes)', () => {
-            const cache = (
-                address as unknown as Record<string, Map<string, string[]>>
-            )._cache;
-            (cache as unknown as Map<string, string[] | undefined>).set(
-                'postalcodes_thai_Empty',
-                undefined,
-            );
-
-            const res = address.getPostalCodeBySubDistrict('Empty');
-            expect(res).toEqual([]);
-        });
+        // Different language: cache is dropped and recomputed.
+        address.setDatabase(makeDatabase('eng', [{ ...ROW, province: 'Z' }]));
+        const afterSwitch = address.getProvinceAll();
+        expect(afterSwitch).not.toBe(first);
+        expect(afterSwitch).toEqual(['Z']);
     });
 });

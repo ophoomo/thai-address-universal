@@ -1,106 +1,80 @@
-import { IAddress } from '../types/address';
-import { IDatabase } from '../types/database';
+import type { IAddress } from '../types/address';
+import type { IDatabase } from '../types/database';
+import type { IExpanded } from '../types/thai-address';
 
+/** Picks the value one query is interested in out of a row. */
+type FieldSelector = (row: IExpanded) => string;
+
+/** Narrows the dataset to the children of one parent. */
+type RowPredicate = (row: IExpanded) => boolean;
+
+/**
+ * Returns the distinct values at a single administrative level, memoising each
+ * distinct list until {@link Address.setDatabase} swaps in a different dataset.
+ *
+ * The four public getters are thin wrappers around {@link Address.distinct}; the
+ * only things that vary between them are the cache key, the field they read and
+ * the (optional) parent filter.
+ */
 export class Address implements IAddress {
-    private _cache = new Map<string, string[]>();
-    private _lastDatabaseName: string | null = null;
+    private cache = new Map<string, string[]>();
+    private cachedFor: string;
 
-    public constructor(private _database: IDatabase) {
-        this._lastDatabaseName = this._database.name;
+    public constructor(private database: IDatabase) {
+        this.cachedFor = database.name;
     }
 
-    /**
-     * Sets a new database instance.
-     * @param database - The new database instance.
-     */
     public setDatabase(database: IDatabase): void {
-        this._database = database;
-        // Clear cache when switching databases
-        if (this._lastDatabaseName !== database.name) {
-            this._cache.clear();
-            this._lastDatabaseName = database.name;
+        this.database = database;
+        if (this.cachedFor !== database.name) {
+            this.cache.clear();
+            this.cachedFor = database.name;
         }
     }
 
-    /**
-     * Retrieves all unique provinces from the database.
-     * Uses caching to avoid redundant database queries.
-     * @returns An array of province names.
-     */
-    public getProvinceAll = (): string[] => {
-        const cacheKey = `provinces_${this._database.name}`;
-        if (!this._cache.has(cacheKey)) {
-            const provinces = Array.from(
-                new Set(this._database.getData().map((item) => item.province)),
-            );
-            this._cache.set(cacheKey, provinces);
-        }
-        return this._cache.get(cacheKey) || [];
-    };
+    public getProvinceAll = (): string[] =>
+        this.distinct(this.cacheKey('province'), (row) => row.province);
 
-    /**
-     * Retrieves districts for a given province.
-     * Uses caching to avoid redundant database queries.
-     * @param province - The province to filter districts by.
-     * @returns An array of district names.
-     */
-    public getDistrictByProvince = (province: string): string[] => {
-        const cacheKey = `districts_${this._database.name}_${province}`;
-        if (!this._cache.has(cacheKey)) {
-            const districts = Array.from(
-                new Set(
-                    this._database
-                        .getData()
-                        .filter((item) => item.province === province)
-                        .map((item) => item.district),
-                ),
-            );
-            this._cache.set(cacheKey, districts);
-        }
-        return this._cache.get(cacheKey) || [];
-    };
+    public getDistrictByProvince = (province: string): string[] =>
+        this.distinct(
+            this.cacheKey('district', province),
+            (row) => row.district,
+            (row) => row.province === province,
+        );
 
-    /**
-     * Retrieves sub-districts for a given district.
-     * Uses caching to avoid redundant database queries.
-     * @param district - The district to filter sub-districts by.
-     * @returns An array of sub-district names.
-     */
-    public getSubDistrictByDistrict = (district: string): string[] => {
-        const cacheKey = `subdistricts_${this._database.name}_${district}`;
-        if (!this._cache.has(cacheKey)) {
-            const subDistricts = Array.from(
-                new Set(
-                    this._database
-                        .getData()
-                        .filter((item) => item.district === district)
-                        .map((item) => item.sub_district),
-                ),
-            );
-            this._cache.set(cacheKey, subDistricts);
-        }
-        return this._cache.get(cacheKey) || [];
-    };
+    public getSubDistrictByDistrict = (district: string): string[] =>
+        this.distinct(
+            this.cacheKey('subDistrict', district),
+            (row) => row.sub_district,
+            (row) => row.district === district,
+        );
 
-    /**
-     * Retrieves postal codes for a given sub-district.
-     * Uses caching to avoid redundant database queries.
-     * @param sub_district - The sub-district to filter postal codes by.
-     * @returns An array of postal codes.
-     */
-    public getPostalCodeBySubDistrict = (sub_district: string): string[] => {
-        const cacheKey = `postalcodes_${this._database.name}_${sub_district}`;
-        if (!this._cache.has(cacheKey)) {
-            const postalCodes = Array.from(
-                new Set(
-                    this._database
-                        .getData()
-                        .filter((item) => item.sub_district === sub_district)
-                        .map((item) => item.postal_code),
-                ),
-            );
-            this._cache.set(cacheKey, postalCodes);
+    public getPostalCodeBySubDistrict = (subDistrict: string): string[] =>
+        this.distinct(
+            this.cacheKey('postalCode', subDistrict),
+            (row) => row.postal_code,
+            (row) => row.sub_district === subDistrict,
+        );
+
+    /** Builds a cache key that is unique per dataset, level and parent value. */
+    private cacheKey(level: string, parent = ''): string {
+        return `${level}:${this.database.name}:${parent}`;
+    }
+
+    private distinct(
+        cacheKey: string,
+        select: FieldSelector,
+        where?: RowPredicate,
+    ): string[] {
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            return cached;
         }
-        return this._cache.get(cacheKey) || [];
-    };
+        const rows = where
+            ? this.database.getData().filter(where)
+            : this.database.getData();
+        const values = [...new Set(rows.map(select))];
+        this.cache.set(cacheKey, values);
+        return values;
+    }
 }

@@ -17,12 +17,12 @@ describe('DatabaseFactory - Error Handling and Edge Cases', () => {
             // Create a fresh instance that will fail to load
             const db = new ThaiDatabase();
             // spy on the prototype (protected method) so TypeScript accepts it
-            const loadWordSpy = jest
+            const loadWordsSpy = jest
                 .spyOn(
                     ThaiDatabase.prototype as unknown as {
-                        loadWord: () => Promise<void>;
+                        loadWords: () => Promise<string[]>;
                     },
-                    'loadWord',
+                    'loadWords',
                 )
                 .mockRejectedValue(new Error('Failed to load words'));
 
@@ -37,7 +37,7 @@ describe('DatabaseFactory - Error Handling and Edge Cases', () => {
                 expect.any(Error),
             );
 
-            loadWordSpy.mockRestore();
+            loadWordsSpy.mockRestore();
         });
     });
 
@@ -107,12 +107,12 @@ describe('DatabaseFactory - Error Handling and Edge Cases', () => {
         it('should handle errors during load and reset data', async () => {
             const db = new ThaiDatabase();
 
-            // Mock loadWord to throw error on instance via prototype spy
+            // Mock loadWords to throw error on instance via prototype spy
             jest.spyOn(
                 ThaiDatabase.prototype as unknown as {
-                    loadWord: () => Promise<void>;
+                    loadWords: () => Promise<string[]>;
                 },
-                'loadWord',
+                'loadWords',
             ).mockRejectedValue(new Error('Word loading failed'));
 
             jest.spyOn(console, 'error').mockImplementation(() => {});

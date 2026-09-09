@@ -1,10 +1,10 @@
+import type { IExpanded, IExpandedWithPoint } from '../src/types/thai-address';
 import {
-    prepareAddress,
     calculateMatchPoints,
-    getBestResult,
     cleanupAddress,
+    getBestResult,
+    prepareAddress,
 } from '../src/utils/split-address';
-import { IExpanded, IExpandedWithPoint } from '../src/types/thai-address';
 
 describe('Split Address Utilities', () => {
     describe('prepareAddress', () => {
@@ -32,10 +32,7 @@ describe('Split Address Utilities', () => {
         });
 
         it('should handle multiple Bangkok abbreviations', () => {
-            const result = prepareAddress(
-                'กรุงเทพ กรุงเทพฯ กทม 10330',
-                '10330',
-            );
+            const result = prepareAddress('กรุงเทพ กรุงเทพฯ กทม 10330', '10330');
             expect(result).toContain('กรุงเทพมหานคร');
         });
 
@@ -53,6 +50,21 @@ describe('Split Address Utilities', () => {
         it('should trim whitespace', () => {
             const result = prepareAddress('  Bangkok  10330  ', '10330');
             expect(result).not.toMatch(/^\s|\s$/);
+        });
+
+        it('should not double-expand an already-full "กรุงเทพมหานคร"', () => {
+            const result = prepareAddress('ลุมพินี ปทุมวัน กรุงเทพมหานคร', '10330');
+            expect(result).toContain('กรุงเทพมหานคร');
+            expect(result).not.toContain('กรุงเทพมหานครมหานคร');
+        });
+
+        it('should still expand the short Bangkok forms', () => {
+            expect(prepareAddress('ปทุมวัน กทม. 10330', '10330')).toContain(
+                'กรุงเทพมหานคร',
+            );
+            expect(prepareAddress('ปทุมวัน กรุงเทพฯ 10330', '10330')).toContain(
+                'กรุงเทพมหานคร',
+            );
         });
     });
 
@@ -155,6 +167,74 @@ describe('Split Address Utilities', () => {
             const result = getBestResult(mixedResults, address);
 
             expect(result?.sub_district).toBe('Lumphini');
+        });
+
+        it('breaks a 3/3 tie toward the row that covers the most distinct words', () => {
+            const address = 'ลุมพินี ปทุมวัน กรุงเทพมหานคร';
+            const results: IExpandedWithPoint[] = [
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'ปทุมวัน',
+                    sub_district: 'ปทุมวัน',
+                    postal_code: '10330',
+                    point: 0,
+                },
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'ปทุมวัน',
+                    sub_district: 'ลุมพินี',
+                    postal_code: '10330',
+                    point: 0,
+                },
+            ];
+            // The 2nd row maps sub-district + district onto two different
+            // words; the 1st reuses "ปทุมวัน" for both.
+            expect(getBestResult(results, address)?.sub_district).toBe('ลุมพินี');
+        });
+
+        it('is order-independent for that tie-break', () => {
+            const address = 'ลุมพินี ปทุมวัน กรุงเทพมหานคร';
+            const results: IExpandedWithPoint[] = [
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'ปทุมวัน',
+                    sub_district: 'ลุมพินี',
+                    postal_code: '10330',
+                    point: 0,
+                },
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'ปทุมวัน',
+                    sub_district: 'ปทุมวัน',
+                    postal_code: '10330',
+                    point: 0,
+                },
+            ];
+            expect(getBestResult(results, address)?.sub_district).toBe('ลุมพินี');
+        });
+
+        it('falls back to "sub-district is its own word" when word coverage ties', () => {
+            // "1ศาลาแดง" glues the house number to the sub-district name, so
+            // both rows cover the same 3 words — the tie is broken toward the
+            // row whose sub-district stands alone as a word ("สีลม").
+            const address = '1ศาลาแดง สีลม บางรัก กรุงเทพมหานคร';
+            const results: IExpandedWithPoint[] = [
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'บางรัก',
+                    sub_district: 'ศาลาแดง',
+                    postal_code: '10500',
+                    point: 0,
+                },
+                {
+                    province: 'กรุงเทพมหานคร',
+                    district: 'บางรัก',
+                    sub_district: 'สีลม',
+                    postal_code: '10500',
+                    point: 0,
+                },
+            ];
+            expect(getBestResult(results, address)?.sub_district).toBe('สีลม');
         });
     });
 

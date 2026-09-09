@@ -1,4 +1,4 @@
-import { IProvince, IWord } from '../src/types/preprocess.d';
+import type { IProvince, IWord } from '../src/types/preprocess';
 import { preprocess, preprocess_word } from '../src/utils/preprocess';
 
 describe('Preprocess Word Test', () => {
@@ -68,13 +68,7 @@ describe('Preprocess Word Test', () => {
 
 describe('Preprocess Test', () => {
     it('should return an empty array when data is empty', () => {
-        const words = [
-            'กระบี่',
-            'คลองท่อม',
-            'คลองท่อมเหนือ',
-            'คลองท่อมใต้',
-            'คลองพน',
-        ];
+        const words = ['กระบี่', 'คลองท่อม', 'คลองท่อมเหนือ', 'คลองท่อมใต้', 'คลองพน'];
 
         const data: IProvince[] = [];
         const result = preprocess(data, words);
@@ -100,13 +94,7 @@ describe('Preprocess Test', () => {
     const geo: (number | boolean)[] = [10, 71, false, 1000, 2000];
 
     it('should transform text based on words and data for Thai Address', () => {
-        const words = [
-            'กระบี่',
-            'คลองท่อม',
-            'คลองท่อมเหนือ',
-            'คลองท่อมใต้',
-            'คลองพน',
-        ];
+        const words = ['กระบี่', 'คลองท่อม', 'คลองท่อมเหนือ', 'คลองท่อมใต้', 'คลองพน'];
 
         const result = preprocess(data, words);
         expect(result.length).toBe(3);
@@ -126,13 +114,7 @@ describe('Preprocess Test', () => {
     });
 
     it('should transform text based on words and data for Thai Address with Geo Data', () => {
-        const words = [
-            'กระบี่',
-            'คลองท่อม',
-            'คลองท่อมเหนือ',
-            'คลองท่อมใต้',
-            'คลองพน',
-        ];
+        const words = ['กระบี่', 'คลองท่อม', 'คลองท่อมเหนือ', 'คลองท่อมใต้', 'คลองพน'];
 
         const result = preprocess(data, words, geo);
         expect(result.length).toBe(3);
@@ -157,5 +139,28 @@ describe('Preprocess Test', () => {
         expect(result[0].district_code).toBe('71');
         expect(result[0].sub_district_code).toBe('');
         expect(result[1].sub_district_code).toBe('1000');
+    });
+
+    it('recovers the district code from a 6-digit sub-district code when the district geo slot is boolean', () => {
+        const words = ['กระบี่', 'คลองท่อม', 'คลองท่อมเหนือ', 'คลองท่อมใต้'];
+        // province=10, district slot is `false`, then two 6-digit sub codes and
+        // one boolean sub code.
+        const brokenGeo: (number | boolean)[] = [
+            10,
+            false,
+            810101,
+            810102,
+            false,
+        ];
+
+        const result = preprocess(data, words, brokenGeo);
+        expect(result).toHaveLength(3);
+        // district code reconstructed from sub_district_code[0:4]
+        expect(result[0].district_code).toBe('8101');
+        expect(result[0].province_code).toBe('10');
+        expect(result[1].district_code).toBe('8101');
+        // boolean sub slot -> no sub code, and nothing to reconstruct from
+        expect(result[2].sub_district_code).toBe('');
+        expect(result[2].district_code).toBe('');
     });
 });

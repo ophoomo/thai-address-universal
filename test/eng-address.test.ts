@@ -1,17 +1,17 @@
 import {
-    setEngMode,
-    getProvinceAll,
+    getDatabase,
     getDistrictByProvince,
-    getSubDistrictByDistrict,
-    searchAddressByProvince,
-    searchAddressByDistrict,
-    searchAddressBySubDistrict,
-    searchAddressByPostalCode,
-    splitAddress,
-    translateWord,
     getEngMode,
     getPostalCodeBySubDistrict,
-    getDatabase,
+    getProvinceAll,
+    getSubDistrictByDistrict,
+    searchAddressByDistrict,
+    searchAddressByPostalCode,
+    searchAddressByProvince,
+    searchAddressBySubDistrict,
+    setEngMode,
+    splitAddress,
+    translateWord,
 } from '../src/core/thai-address';
 
 setEngMode(true);

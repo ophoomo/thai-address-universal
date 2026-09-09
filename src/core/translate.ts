@@ -1,51 +1,57 @@
-import { ITranslate } from '../types/translate';
+import { LANGUAGE } from '../constants';
+import type { ITranslate } from '../types/translate';
 import { DatabaseFactory } from './database';
 
+/** True when `text` starts with a Latin letter, i.e. it is an English name. */
+const startsWithLatinLetter = (text: string): boolean => {
+    const first = text.charAt(0).toLowerCase();
+    return first >= 'a' && first <= 'z';
+};
+
+/**
+ * Translates a single place name between Thai and English by looking it up in
+ * the paired word tables of the two datasets. Direction is inferred from the
+ * script of the input.
+ */
 export class Translate implements ITranslate {
     private thaiWords: string[] = [];
-    private engWords: string[] = [];
-
-    public constructor() {}
+    private englishWords: string[] = [];
 
     /**
-     * Translates a given word from English to Thai or vice versa.
-     * @param text - The word to be translated.
-     * @returns The translated word, or the original word if no translation is found.
+     * @param text - A place name in Thai or English.
+     * @returns The name in the other language, or `text` unchanged when it has
+     *          no counterpart (and `''` for empty input).
      */
     public async translateWord(text: string): Promise<string> {
-        if (text.length === 0) return '';
+        if (text.length === 0) {
+            return '';
+        }
 
         await this.loadWords();
 
-        let index = -1;
-        const firstChar = text.charAt(0).toLowerCase();
-        const checkEng = firstChar >= 'a' && firstChar <= 'z';
+        const fromEnglish = startsWithLatinLetter(text);
+        const [source, target] = fromEnglish
+            ? [this.englishWords, this.thaiWords]
+            : [this.thaiWords, this.englishWords];
 
-        if (checkEng) {
-            const word = text.toLowerCase().trim();
-            index = this.engWords.findIndex((item) =>
-                item.toLowerCase().trim().includes(word),
-            );
-        } else {
-            index = this.thaiWords.findIndex((item) => item.includes(text));
-        }
+        const needle = fromEnglish ? text.toLowerCase().trim() : text;
+        const index = source.findIndex((word) =>
+            (fromEnglish ? word.toLowerCase().trim() : word).includes(needle),
+        );
 
-        if (index === -1) return text;
-        return checkEng ? this.thaiWords[index] : this.engWords[index];
+        return index === -1 ? text : target[index];
     }
 
-    /**
-     * Loads Thai and English words from the database if they haven't been loaded yet.
-     */
+    /** Loads both word tables once, on first use. */
     private async loadWords(): Promise<void> {
         if (this.thaiWords.length === 0) {
             this.thaiWords = (
-                await DatabaseFactory.createDatabase('thai')
+                await DatabaseFactory.createDatabase(LANGUAGE.THAI)
             ).getWord();
         }
-        if (this.engWords.length === 0) {
-            this.engWords = (
-                await DatabaseFactory.createDatabase('eng')
+        if (this.englishWords.length === 0) {
+            this.englishWords = (
+                await DatabaseFactory.createDatabase(LANGUAGE.ENGLISH)
             ).getWord();
         }
     }

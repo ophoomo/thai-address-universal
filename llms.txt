@@ -1,0 +1,135 @@
+# Thai Address Universal
+
+> Offline lookup, validation and parsing of Thai administrative addresses
+> (จังหวัด → อำเภอ → ตำบล → รหัสไปรษณีย์), in Thai and English, with the official
+> geocodes. All 77 provinces, ~928 districts and ~7,500 sub-districts are
+> bundled and lazy-loaded. Every lookup function is `async`.
+
+`npm install thai-address-universal` — ships ESM, CJS and UMD; every export is
+available from the package root.
+
+## Rules of the road
+
+- The first lookup auto-loads the data; there is no init step.
+- `setEngMode` / `setGeoMode` are process-global switches.
+- `getDatabase()`, `getEngMode()`, `getGeoMode()` are synchronous — call them
+  only after an `await`ed lookup (or `await preload()`).
+- The structured API (`getProvinces` / `getDistricts` / `getSubDistricts`) always
+  returns both languages + the geocode, so it never needs `setEngMode`.
+
+## Types
+
+```ts
+type ILanguage = 'thai' | 'eng';
+
+interface IExpanded {
+  province: string;
+  district: string;        // อำเภอ / เขต
+  sub_district: string;    // ตำบล / แขวง
+  postal_code: string;     // 5 digits, or '' for a few uninhabited islands
+  province_code?: string;      // geo mode only
+  district_code?: string;      // geo mode only
+  sub_district_code?: string;  // geo mode only
+  address?: string;            // splitAddress() output only
+}
+
+interface AddressEntry { nameTh: string; nameEn: string; code: string; postalCode?: string }
+```
+
+## Examples
+
+### Cascading picker (bilingual + geocode)
+
+```ts
+import { getProvinces, getDistricts, getSubDistricts } from 'thai-address-universal';
+
+const provinces = await getProvinces();
+// [{ nameTh: 'เชียงใหม่', nameEn: 'Chiang Mai', code: '50' }, …]
+
+const districts = await getDistricts('เชียงใหม่');   // Thai name, English name, or '50'
+const subs = await getSubDistricts('เมืองเชียงใหม่'); // Thai/English name, or '5001'
+// subs[0] === { nameTh: 'ศรีภูมิ', nameEn: 'Si Phum', code: '500101', postalCode: '50200' }
+```
+
+### Plain name lists (active language only)
+
+```ts
+import {
+  getProvinceAll, getDistrictByProvince,
+  getSubDistrictByDistrict, getPostalCodeBySubDistrict,
+} from 'thai-address-universal';
+
+await getProvinceAll();                          // ['กระบี่', 'กรุงเทพมหานคร', …]
+await getDistrictByProvince('ภูเก็ต');           // ['กะทู้', 'ถลาง', 'เมืองภูเก็ต']
+await getSubDistrictByDistrict('เมืองภูเก็ต');
+await getPostalCodeBySubDistrict('ตลาดใหญ่');    // ['83000', '50220']  (name shared by 2 provinces)
+```
+
+### Validate a form
+
+```ts
+import { validateAddress } from 'thai-address-universal';
+
+await validateAddress({
+  province: 'เชียงใหม่', district: 'เมืองเชียงใหม่',
+  subDistrict: 'ศรีภูมิ', postalCode: '50200',
+});
+// { valid: true, errors: {}, match: { …IExpanded } }
+
+await validateAddress({ province: 'เชียงใหม่', district: 'หาดใหญ่' });
+// { valid: false, errors: { district: 'District "หาดใหญ่" is not in province "เชียงใหม่"' } }
+
+await validateAddress({ province: 'Phuket' }, { language: 'eng' }); // check without setEngMode
+```
+
+### Parse free text ↔ build a string
+
+```ts
+import { splitAddress, formatAddress } from 'thai-address-universal';
+
+await splitAddress('99/9 หมู่ 5 ต.ศรีภูมิ อ.เมืองเชียงใหม่ จ.เชียงใหม่ 50200');
+// { address: '99/9 หมู่ 5', sub_district: 'ศรีภูมิ', district: 'เมืองเชียงใหม่',
+//   province: 'เชียงใหม่', postal_code: '50200' }
+// -> null when there is no 5-digit postal code or the parts don't corroborate it.
+
+formatAddress({
+  address: '99/9', subDistrict: 'ลุมพินี', district: 'ปทุมวัน',
+  province: 'กรุงเทพมหานคร', postalCode: '10330',
+});
+// "99/9 แขวงลุมพินี เขตปทุมวัน กรุงเทพมหานคร 10330"  (Bangkok -> แขวง/เขต automatically)
+
+formatAddress(parts, { prefix: false, separator: ', ' });      // "99/9, ลุมพินี, ปทุมวัน, …"
+formatAddress(parts, { language: 'eng' });                     // "… Khwaeng Lumphini Khet Pathum Wan Bangkok"
+```
+
+### Search-as-you-type
+
+```ts
+import { searchAddressBySubDistrict, searchAddressByPostalCode } from 'thai-address-universal';
+
+await searchAddressBySubDistrict('ลุมพิน', 8);  // up to 8 IExpanded rows containing the substring
+await searchAddressByPostalCode(10330);         // every row on postal code 10330 (number ok)
+```
+
+### Geocodes
+
+```ts
+import { setGeoMode, getByGeocode, preload } from 'thai-address-universal';
+
+await getByGeocode('50');     // { nameTh: 'เชียงใหม่', … }   (length picks the level: 2/4/6)
+await getByGeocode('500101'); // { nameTh: 'ศรีภูมิ', code: '500101', postalCode: '50200' }
+
+await setGeoMode(true);       // now every IExpanded row carries *_code too
+
+void preload({ language: 'both', geo: true }); // warm the chunks on form mount; never changes mode
+```
+
+## Gotchas
+
+- `splitAddress` needs the province, district AND sub-district all present in
+  the text (any order, prefixed or not) plus a 5-digit postal code.
+- Geocodes: `province_code` and `district_code` nest correctly; for ~15% of rows
+  the upstream `sub_district_code` has a wrong district prefix — don't assume
+  `sub_district_code.slice(0, 4) === district_code`.
+- Bundle: ~110 KB base + ~165 KB Thai data chunk on first lookup (English ~115 KB,
+  geo ~57 KB, each on demand). Bundlers that honour dynamic `import()` split these.

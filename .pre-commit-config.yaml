@@ -9,10 +9,14 @@ repos:
             args: ['--allow-multiple-documents']
           - id: check-json
           - id: detect-private-key
-          - id: double-quote-string-fixer
           - id: end-of-file-fixer
           - id: mixed-line-ending
           - id: check-merge-conflict
+    - repo: https://github.com/biomejs/pre-commit
+      rev: v2.5.12
+      hooks:
+          - id: biome-check
+            additional_dependencies: ['@biomejs/biome@2.5.12']
     - repo: https://github.com/gitleaks/gitleaks
       rev: v8.30.0
       hooks:

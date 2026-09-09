@@ -1,122 +1,107 @@
-import { IDatabase, ILanguage } from '../types/database';
-import { IExpanded } from '../types/thai-address';
+import ThaiAddressTree from '../../migrate/output/db.json';
+import { LANGUAGE } from '../constants';
+import type { IDatabase, ILanguage } from '../types/database';
+import type { IGeo } from '../types/geo';
+import type { IProvince } from '../types/preprocess';
+import type { IExpanded } from '../types/thai-address';
 import { preprocess, preprocess_word } from '../utils/preprocess';
-import ThaiAddressDB from '../../migrate/output/db.json';
-import { IProvince } from '../types/preprocess';
-import { IGeo } from '../types/geo';
 
-class Database implements IDatabase {
-    public name: ILanguage = 'thai';
+/**
+ * One language's dataset. The province → district → sub-district tree is
+ * shared by both languages (`ThaiAddressTree`); only the word table differs,
+ * and it is fetched lazily by the language-specific subclasses.
+ */
+abstract class Database implements IDatabase {
+    public abstract readonly name: ILanguage;
 
-    protected data: IExpanded[] = [];
+    protected rows: IExpanded[] = [];
     protected words: string[] = [];
     protected geo?: IGeo;
 
-    /**
-     * Returns the processed data
-     * @returns IExpanded[]
-     */
     public getData(): IExpanded[] {
-        return this.data;
+        return this.rows;
     }
 
-    /**
-     * Returns the words used for processing
-     * @returns string[]
-     */
     public getWord(): string[] {
         return this.words;
     }
 
-    /**
-     * Returns geo data, if available
-     * @returns IGeo | undefined
-     */
     public getGeo(): IGeo | undefined {
         return this.geo;
     }
 
-    /**
-     * Sets the geo data and reloads the database
-     * @param geo IGeo - Geo data
-     */
-    public async setGeo(geo: IGeo): Promise<void> {
+    public async setGeo(geo: IGeo | undefined): Promise<void> {
         this.geo = geo;
         await this.load();
     }
 
-    /**
-     * Loads data into the database by preprocessing it
-     * If words are not loaded, loads them first
-     */
+    /** Decodes the shared tree with this language's words (and geo overlay). */
     public async load(): Promise<void> {
         try {
             if (this.words.length === 0) {
-                await this.loadWord();
+                this.words = await this.loadWords();
             }
-            this.data = preprocess(
-                ThaiAddressDB as IProvince[],
+            this.rows = preprocess(
+                ThaiAddressTree as IProvince[],
                 this.words,
                 this.geo?.getData(),
             );
         } catch (error) {
             console.error('Error loading database:', error);
-            this.data = [];
+            this.rows = [];
             this.words = [];
         }
     }
 
-    /**
-     * Placeholder method for loading words (implemented in subclasses)
-     */
-    protected async loadWord() {}
+    /** Fetches and decodes this language's word table. */
+    protected abstract loadWords(): Promise<string[]>;
 }
 
+/** Thai-language dataset. */
 export class ThaiDatabase extends Database {
-    public name: ILanguage = 'thai';
+    public readonly name = LANGUAGE.THAI;
 
-    /**
-     * Loads words specific to the Thai language
-     */
-    protected override async loadWord() {
-        const rawData = await import('../../migrate/output/th_db.json');
-        this.words = preprocess_word(rawData);
+    protected override async loadWords(): Promise<string[]> {
+        const module = await import('../../migrate/output/th_db.json');
+        return preprocess_word(module);
     }
 }
 
+/** English-language dataset. */
 export class EngDatabase extends Database {
-    public name: ILanguage = 'eng';
+    public readonly name = LANGUAGE.ENGLISH;
 
-    /**
-     * Loads words specific to the English language
-     */
-    protected override async loadWord() {
-        const rawData = await import('../../migrate/output/en_db.json');
-        this.words = preprocess_word(rawData, true);
+    protected override async loadWords(): Promise<string[]> {
+        const module = await import('../../migrate/output/en_db.json');
+        return preprocess_word(module, true);
     }
 }
 
+/**
+ * Owns the (at most two) {@link Database} instances and the shared geo overlay.
+ * Instances are cached because decoding the ~7.5k rows is not free, and the
+ * overlay is applied to every instance so switching languages keeps geo mode.
+ */
+// biome-ignore lint/complexity/noStaticOnlyClass: a single namespaced owner for the instance cache reads better than four loose module functions sharing hidden state.
 export class DatabaseFactory {
-    private static instances: Map<string, IDatabase> = new Map();
+    private static readonly instances = new Map<ILanguage, IDatabase>();
     private static geo: IGeo | null = null;
 
-    /**
-     * Creates a new database instance based on the language
-     * @param language ILanguage - The language of the database ('thai' or 'eng')
-     * @returns Promise<IDatabase>
-     */
+    /** Returns the cached dataset for `language`, building it on first request. */
     static async createDatabase(language: ILanguage): Promise<IDatabase> {
-        const cachedInstance = DatabaseFactory.instances.get(language);
-        if (cachedInstance) {
-            return cachedInstance;
+        const cached = DatabaseFactory.instances.get(language);
+        if (cached) {
+            return cached;
         }
 
         try {
             const instance =
-                language === 'thai' ? new ThaiDatabase() : new EngDatabase();
+                language === LANGUAGE.THAI
+                    ? new ThaiDatabase()
+                    : new EngDatabase();
 
-            if (this.geo !== null) {
-                await instance.setGeo(this.geo);
+            if (DatabaseFactory.geo !== null) {
+                await instance.setGeo(DatabaseFactory.geo);
             } else {
                 await instance.load();
             }
@@ -129,12 +114,9 @@ export class DatabaseFactory {
         }
     }
 
-    /**
-     * Sets geo data for all existing database instances
-     * @param geo IGeo - The geo data to be set
-     */
+    /** Attaches `geo` to every current and future instance. */
     static createGeo(geo: IGeo): void {
-        this.geo = geo;
+        DatabaseFactory.geo = geo;
         for (const instance of DatabaseFactory.instances.values()) {
             instance.setGeo(geo).catch((error) => {
                 console.error('Error setting geo data:', error);
@@ -142,11 +124,9 @@ export class DatabaseFactory {
         }
     }
 
-    /**
-     * Clears geo data from all database instances
-     */
+    /** Detaches the geo overlay from every instance. */
     static clearGeo(): void {
-        this.geo = null;
+        DatabaseFactory.geo = null;
         for (const instance of DatabaseFactory.instances.values()) {
             instance.setGeo(undefined).catch((error) => {
                 console.error('Error clearing geo data:', error);
@@ -154,9 +134,7 @@ export class DatabaseFactory {
         }
     }
 
-    /**
-     * Clears all database instances
-     */
+    /** Drops the instance cache (used by tests). */
     static clearInstances(): void {
         DatabaseFactory.instances.clear();
     }

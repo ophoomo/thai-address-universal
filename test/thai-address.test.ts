@@ -1,17 +1,17 @@
 import {
-    setEngMode,
-    getProvinceAll,
+    getDatabase,
     getDistrictByProvince,
-    getSubDistrictByDistrict,
+    getEngMode,
     getPostalCodeBySubDistrict,
-    searchAddressByProvince,
+    getProvinceAll,
+    getSubDistrictByDistrict,
     searchAddressByDistrict,
-    searchAddressBySubDistrict,
     searchAddressByPostalCode,
+    searchAddressByProvince,
+    searchAddressBySubDistrict,
+    setEngMode,
     splitAddress,
     translateWord,
-    getEngMode,
-    getDatabase,
 } from '../src/core/thai-address';
 
 setEngMode(false);
@@ -92,8 +92,7 @@ describe('Sub Districts with Multiple Postal Codes', () => {
             const result = await searchAddressBySubDistrict(sub_district);
             expect(result.length).toBeGreaterThan(1);
             expect(
-                result.filter((item) => item.province === 'ประจวบคีรีขันธ์')
-                    .length,
+                result.filter((item) => item.province === 'ประจวบคีรีขันธ์').length,
             ).toBe(2);
         });
     });

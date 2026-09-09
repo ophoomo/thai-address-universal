@@ -1,6 +1,6 @@
 {
     "name": "thai-address-universal",
-    "version": "2.1.3",
+    "version": "2.2.0",
     "description": "Thai Address Universal is a TypeScript-based library derived from thai-address-database, offering improved performance and accurate type-checking for handling Thai address data.",
     "license": "ISC",
     "author": {
@@ -17,13 +17,30 @@
     "main": "./dist/cjs/index.js",
     "module": "./dist/esm/index.js",
     "types": "./dist/esm/types/index.d.ts",
+    "unpkg": "./dist/umd/index.js",
+    "jsdelivr": "./dist/umd/index.js",
     "exports": {
         "./package.json": "./package.json",
         ".": {
-            "require": "./dist/cjs/index.js",
-            "import": "./dist/esm/index.js",
-            "types": "./dist/esm/types/index.d.ts"
+            "import": {
+                "types": "./dist/esm/types/index.d.ts",
+                "default": "./dist/esm/index.js"
+            },
+            "require": {
+                "types": "./dist/cjs/types/index.d.ts",
+                "default": "./dist/cjs/index.js"
+            }
         }
+    },
+    "files": [
+        "dist",
+        "llms.txt",
+        "README.md",
+        "LICENSE.md"
+    ],
+    "sideEffects": false,
+    "engines": {
+        "node": ">=18"
     },
     "repository": {
         "type": "git",
@@ -32,32 +49,27 @@
     "bugs": "https://github.com/ophoomo/thai-address-universal/issues",
     "homepage": "https://github.com/ophoomo/thai-address-universal",
     "scripts": {
-        "format": "npx prettier --write .",
-        "eslint": "npx eslint .",
-        "coverage": "npx jest --coverage",
-        "build": "npm run format && eslint && rollup -c",
-        "docs": "npx typedoc src/index.ts",
+        "format": "biome format --write .",
+        "lint": "biome check --write .",
+        "lint:ci": "biome ci .",
+        "typecheck": "tsc --noEmit",
+        "build:js": "rolldown --config rolldown.config.mjs",
+        "build:types": "tsc --project tsconfig.build.json",
+        "build": "npm run build:js && npm run build:types && node scripts/postbuild.mjs",
+        "prepack": "npm run build",
+        "coverage": "jest --coverage",
+        "docs": "deno doc --html --name=thai-address-universal --output=docs src/index.ts && node -e \"require('fs').writeFileSync('docs/.nojekyll','')\"",
         "test": "jest"
     },
     "devDependencies": {
-        "@eslint/js": "^9.18.0",
-        "@rollup/plugin-babel": "^6.0.4",
-        "@rollup/plugin-commonjs": "^28.0.2",
-        "@rollup/plugin-json": "^6.1.0",
-        "@rollup/plugin-node-resolve": "^16.0.0",
-        "@rollup/plugin-terser": "^0.4.4",
-        "@rollup/plugin-typescript": "^12.1.2",
+        "@biomejs/biome": "^2.5.12",
+        "@swc/core": "^1.16.2",
+        "@swc/jest": "^0.2.39",
         "@types/jest": "^30.0.0",
-        "eslint": "^9.18.0",
-        "globals": "^16.4.0",
-        "jest": "^30.2.0",
-        "jest-environment-jsdom": "^30.2.0",
-        "prettier": "^3.4.2",
-        "rollup": "^4.30.1",
-        "ts-jest": "^29.2.5",
-        "tslib": "^2.8.1",
-        "typedoc": "^0.28.13",
-        "typescript": "^5.7.3",
-        "typescript-eslint": "^8.20.0"
+        "@types/node": "^24.10.1",
+        "jest": "^30.5.1",
+        "jest-environment-jsdom": "^30.5.1",
+        "rolldown": "^1.2.8",
+        "typescript": "^7.0.2"
     }
 }
