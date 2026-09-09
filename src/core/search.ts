@@ -1,178 +1,136 @@
-import { IDatabase } from '../types/database';
-import { IExpanded, IExpandedWithPoint } from '../types/thai-address';
-import { ISearch } from '../types/search';
+import { DEFAULT_SEARCH_LIMIT, POSTAL_CODE_PATTERN } from '../constants';
+import type { IDatabase } from '../types/database';
+import type { ISearch } from '../types/search';
+import type { IExpanded, IExpandedWithPoint } from '../types/thai-address';
 import {
     cleanupAddress,
     getBestResult,
     prepareAddress,
 } from '../utils/split-address';
 
-export class SearchRepository implements ISearch {
-    private _searchCache = new Map<string, IExpanded[]>();
-    private _lastDatabaseName: string | null = null;
+/** Effectively "no limit" for the internal postal-code lookup in `splitAddress`. */
+const UNBOUNDED = Number.MAX_SAFE_INTEGER;
 
-    public constructor(private _database: IDatabase) {
-        this._lastDatabaseName = this._database.name;
+/**
+ * Substring search over the dataset, plus the `splitAddress` parser. Every
+ * distinct `(field, query, limit)` result is memoised until the backing
+ * database changes.
+ */
+export class SearchRepository implements ISearch {
+    private cache = new Map<string, IExpanded[]>();
+    private cachedFor: string;
+
+    public constructor(private database: IDatabase) {
+        this.cachedFor = database.name;
     }
 
-    /**
-     * Updates the database instance used for searching.
-     * @param database - The new database instance.
-     */
     public setDatabase(database: IDatabase): void {
-        this._database = database;
-        // Clear cache when switching databases
-        if (this._lastDatabaseName !== database.name) {
-            this._searchCache.clear();
-            this._lastDatabaseName = database.name;
+        this.database = database;
+        if (this.cachedFor !== database.name) {
+            this.cache.clear();
+            this.cachedFor = database.name;
         }
     }
 
-    /**
-     * Searches for addresses by province.
-     * @param searchStr - The search string for the province.
-     * @param maxResult - Optional limit on the number of results.
-     * @returns An array of matching address data.
-     */
-    public searchAddressByProvince(
-        searchStr: string,
-        maxResult?: number,
-    ): IExpanded[] {
-        return this.searchAddressByField('province', searchStr, maxResult);
+    public searchAddressByProvince(query: string, limit?: number): IExpanded[] {
+        return this.resolveResultbyField('province', query, limit);
     }
 
-    /**
-     * Searches for addresses by district.
-     * @param searchStr - The search string for the district.
-     * @param maxResult - Optional limit on the number of results.
-     * @returns An array of matching address data.
-     */
-    public searchAddressByDistrict(
-        searchStr: string,
-        maxResult?: number,
-    ): IExpanded[] {
-        return this.searchAddressByField('district', searchStr, maxResult);
+    public searchAddressByDistrict(query: string, limit?: number): IExpanded[] {
+        return this.resolveResultbyField('district', query, limit);
     }
 
-    /**
-     * Searches for addresses by sub-district.
-     * @param searchStr - The search string for the sub-district.
-     * @param maxResult - Optional limit on the number of results.
-     * @returns An array of matching address data.
-     */
     public searchAddressBySubDistrict(
-        searchStr: string | number,
-        maxResult?: number,
+        query: string | number,
+        limit?: number,
     ): IExpanded[] {
-        return this.searchAddressByField('sub_district', searchStr, maxResult);
+        return this.resolveResultbyField('sub_district', query, limit);
     }
 
-    /**
-     * Searches for addresses by postal code.
-     * @param searchStr - The search string for the postal code.
-     * @param maxResult - Optional limit on the number of results.
-     * @returns An array of matching address data.
-     */
     public searchAddressByPostalCode(
-        searchStr: string | number,
-        maxResult?: number,
+        query: string | number,
+        limit?: number,
     ): IExpanded[] {
-        return this.searchAddressByField('postal_code', searchStr, maxResult);
+        return this.resolveResultbyField('postal_code', query, limit);
     }
 
     /**
-     * Splits a full address string into its components (province, district, sub-district, postal code).
-     * @param fullAddress - The full address string to split.
-     * @returns An object containing the address components, or null if parsing fails.
+     * Splits a free-text address into its components.
+     *
+     * The postal code is the anchor: it is extracted first, every row that
+     * uses it is fetched, and {@link getBestResult} picks the row whose
+     * province / district / sub-district best explain the rest of the text.
+     *
+     * @returns The components plus the unmatched `address` remainder, or `null`
+     *          when no postal code is found or no row corroborates it.
      */
     public splitAddress(fullAddress: string): IExpanded | null {
-        // Use regex to extract the postal code from the full address
-        const regex = /\s(\d{5})(\s|$)/gi;
-        const regexResult = regex.exec(fullAddress);
-        if (!regexResult) return null;
+        const postalMatch = fullAddress.match(POSTAL_CODE_PATTERN);
+        if (!postalMatch) {
+            return null;
+        }
+        const postalCode = postalMatch[1];
 
-        const postal_code = regexResult[1];
-        // Prepare the address by removing the postal code and cleaning up the string
-        const address = prepareAddress(fullAddress, postal_code);
+        const remainder = prepareAddress(fullAddress, postalCode);
+        // No limit here: a postal code can span more than DEFAULT_SEARCH_LIMIT
+        // sub-districts, and the real match must not be truncated away.
+        const candidates = this.searchAddressByPostalCode(
+            postalCode,
+            UNBOUNDED,
+        ) as IExpandedWithPoint[];
 
-        // Search for addresses matching the extracted postal code
-        const searchResult: IExpandedWithPoint[] =
-            this.searchAddressByPostalCode(postal_code);
-
-        // Find the best matching address from the search results
-        const bestResult = getBestResult(searchResult, address);
-
-        if (bestResult) {
-            // Clean up the address string based on the best match
-            const newAddress = cleanupAddress(address, bestResult);
-            return {
-                address: newAddress,
-                district: bestResult.district,
-                sub_district: bestResult.sub_district,
-                province: bestResult.province,
-                postal_code: postal_code,
-            } as IExpanded;
+        const best = getBestResult(candidates, remainder);
+        if (!best) {
+            return null;
         }
 
-        return null;
+        return {
+            address: cleanupAddress(remainder, best),
+            district: best.district,
+            sub_district: best.sub_district,
+            province: best.province,
+            postal_code: postalCode,
+        };
     }
 
     /**
-     * Helper method to search for addresses by a specific field (e.g., province, district).
-     * @param field - The field to search by.
-     * @param searchStr - The search string.
-     * @param maxResult - Optional limit on the number of results.
-     * @returns An array of matching address data.
-     */
-    private searchAddressByField(
-        field: keyof IExpanded,
-        searchStr: string | number,
-        maxResult?: number,
-    ): IExpanded[] {
-        return this.resolveResultbyField(field, searchStr, maxResult);
-    }
-
-    /**
-     * Filters and resolves address data based on a specific field and search string.
-     * @param type - The field to filter by (e.g., province, district).
-     * @param searchStr - The search string.
-     * @param maxResult - Optional limit on the number of results (default: 20).
-     * @returns An array of matching address data.
+     * Case-insensitive substring match of `query` against one field.
+     *
+     * @param field - Column to match on.
+     * @param query - Needle; numbers are stringified, blank queries return `[]`.
+     * @param limit - Maximum rows to return; defaults to {@link DEFAULT_SEARCH_LIMIT}.
      */
     public resolveResultbyField(
-        type: keyof IExpanded,
-        searchStr: string | number,
-        maxResult: number = 20,
+        field: keyof IExpanded,
+        query: string | number,
+        limit: number = DEFAULT_SEARCH_LIMIT,
     ): IExpanded[] {
-        // Normalize the search string
-        const normalizedSearch = searchStr.toString().trim().toLowerCase();
-        if (normalizedSearch === '') return [];
+        const needle = query.toString().trim().toLowerCase();
+        if (needle === '') {
+            return [];
+        }
 
-        // Create cache key with field and search parameters
-        const cacheKey = `${type}_${normalizedSearch}_${maxResult}_${this._database.name}`;
-
-        if (this._searchCache.has(cacheKey)) {
-            return this._searchCache.get(cacheKey) || [];
+        const cacheKey = `${field}:${needle}:${limit}:${this.database.name}`;
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            return cached;
         }
 
         try {
-            // Filter and limit results in a single pass
-            const results = this._database
+            const matches = this.database
                 .getData()
-                .filter((item) =>
-                    (item[type] || '')
+                .filter((row) =>
+                    (row[field] ?? '')
                         .toString()
                         .trim()
                         .toLowerCase()
-                        .includes(normalizedSearch),
+                        .includes(needle),
                 )
-                .slice(0, maxResult);
-
-            // Cache the results
-            this._searchCache.set(cacheKey, results);
-            return results;
-        } catch (e) {
-            console.error('Error during filtering:', e);
+                .slice(0, limit);
+            this.cache.set(cacheKey, matches);
+            return matches;
+        } catch (error) {
+            console.error('Error during filtering:', error);
             return [];
         }
     }

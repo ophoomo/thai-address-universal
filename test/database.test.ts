@@ -1,7 +1,7 @@
 import {
     DatabaseFactory,
-    ThaiDatabase,
     EngDatabase,
+    ThaiDatabase,
 } from '../src/core/database';
 import { Geo } from '../src/core/geo';
 

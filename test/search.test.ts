@@ -1,5 +1,5 @@
 import { SearchRepository } from '../src/core/search';
-import { IDatabase } from '../src/types/database';
+import type { IDatabase } from '../src/types/database';
 
 describe('resolveResultbyField Function', () => {
     let searchRepository: SearchRepository;
@@ -34,7 +34,7 @@ describe('resolveResultbyField Function', () => {
 
     describe('resolveResultbyField', () => {
         it('should return matching results for province field', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'Bangkok',
             );
@@ -44,7 +44,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should return matching results for district field', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'district',
                 'Sathon',
             );
@@ -53,7 +53,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should return matching results for sub_district field', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'sub_district',
                 'Si Phum',
             );
@@ -62,7 +62,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should return matching results for postal_code field', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'postal_code',
                 '10120',
             );
@@ -71,7 +71,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should return empty array if no match found', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'NonExistentProvince',
             );
@@ -79,7 +79,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should return empty array if search string is empty', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 '',
             );
@@ -87,7 +87,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should limit results based on maxResult parameter', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'Bangkok',
                 1,
@@ -97,7 +97,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should handle case-insensitive search', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'bangkok',
             );
@@ -107,7 +107,7 @@ describe('resolveResultbyField Function', () => {
         });
 
         it('should handle numeric search strings', () => {
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'postal_code',
                 10120,
             );
@@ -121,7 +121,7 @@ describe('resolveResultbyField Function', () => {
                 throw new Error('Test error');
             });
 
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'Bangkok',
             );

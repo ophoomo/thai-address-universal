@@ -1,22 +1,21 @@
-import { IGeo } from '../types/geo';
+import type { IGeo } from '../types/geo';
 
+/**
+ * Lazily-loaded geocode overlay. The data is a flat number stream in the same
+ * depth-first order as the address tree (see `preprocess`), kept in its own
+ * chunk so it is only downloaded once geo mode is turned on.
+ */
 export class Geo implements IGeo {
     private data: (number | boolean)[] = [];
 
-    /**
-     * Retrieves the loaded geo data.
-     * @returns An array of geo data (numbers or booleans).
-     */
+    /** The loaded geocode stream (empty until {@link Geo.load} resolves). */
     public getData(): (number | boolean)[] {
         return this.data;
     }
 
-    /**
-     * Loads geo data from a JSON file asynchronously.
-     * The data is stored in the `data` property of the class.
-     */
-    public async load() {
-        const rawData = await import('../../migrate/output/geo.json');
-        this.data = rawData.default as (number | boolean)[];
+    /** Fetches and caches the geocode chunk. */
+    public async load(): Promise<void> {
+        const module = await import('../../migrate/output/geo.json');
+        this.data = module.default as (number | boolean)[];
     }
 }

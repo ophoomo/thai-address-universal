@@ -1,209 +1,188 @@
-import { IExpanded } from '../types/thai-address';
-import { DatabaseFactory } from './database';
-import { SearchRepository } from './search';
-import { Address } from './address';
-import { Translate } from './translate';
-import { Geo } from './geo';
+import { LANGUAGE, type Language } from '../constants';
+import type { IAddress } from '../types/address';
+import type { IDatabase } from '../types/database';
+import type { ISearch } from '../types/search';
+import type { IExpanded } from '../types/thai-address';
+import type { ITranslate } from '../types/translate';
 import { getDefaultLanguage } from '../utils/helper';
-import { IDatabase } from '../types/database';
-import { ISearch } from '../types/search';
-import { IAddress } from '../types/address';
-import { ITranslate } from '../types/translate';
+import { Address } from './address';
+import { DatabaseFactory } from './database';
+import { Geo } from './geo';
+import { SearchRepository } from './search';
+import { Translate } from './translate';
 
+/**
+ * Process-wide singletons. They are created on first use by
+ * {@link ensureInitialised} and re-pointed (not re-created) when the language
+ * changes, so callers never have to await an explicit setup step.
+ */
 let database: IDatabase;
 let search: ISearch;
 let address: IAddress;
 let translate: ITranslate;
 
-/**
- * Initializes the database and related repositories.
- * This function creates a new database instance using the default language,
- * and initializes the search, address, and translate repositories.
- */
-const initializeDatabase = async (): Promise<void> => {
+/** Builds the singletons for the host's default language. */
+const initialise = async (): Promise<void> => {
     database = await DatabaseFactory.createDatabase(getDefaultLanguage());
     search = new SearchRepository(database);
     address = new Address(database);
     translate = new Translate();
 };
 
-/**
- * Ensures that the database is initialized before use.
- * If the database is not initialized yet, this function will call `initializeDatabase` to initialize it.
- */
-const ensureDatabaseInitialized = async (): Promise<void> => {
+/** Guarantees the singletons exist before a lookup touches them. */
+const ensureInitialised = async (): Promise<void> => {
     if (!database) {
-        await initializeDatabase();
+        await initialise();
     }
 };
 
-/**
- * Retrieves all data from the current database.
- * @returns An array of expanded address data.
- */
-export const getDatabase = (): IExpanded[] => {
-    return database.getData();
-};
+/** Every decoded sub-district row of the active dataset. */
+export const getDatabase = (): IExpanded[] => database.getData();
+
+/** Whether the geocode overlay is currently attached. */
+export const getGeoMode = (): boolean => database.getGeo() !== undefined;
 
 /**
- * Checks if geo mode is enabled (i.e., if geo data is available).
- * @returns True if geo mode is enabled, otherwise false.
+ * Attaches or detaches the geocode overlay. While on, every row also carries
+ * `province_code` / `district_code` / `sub_district_code`.
  */
-export const getGeoMode = (): boolean =>
-    database.getGeo() !== undefined ? true : false;
-
-/**
- * Enables or disables geo mode by creating or clearing the Geo instance.
- * @param status - True to enable geo mode, false to disable.
- */
-export const setGeoMode = async (status: boolean): Promise<void> => {
-    if (status) {
-        const geo = new Geo();
-        await geo.load();
-        DatabaseFactory.createGeo(geo);
-    } else {
+export const setGeoMode = async (enabled: boolean): Promise<void> => {
+    if (!enabled) {
         DatabaseFactory.clearGeo();
+        return;
     }
+    const geo = new Geo();
+    await geo.load();
+    DatabaseFactory.createGeo(geo);
 };
 
-/**
- * Checks if English mode is enabled (i.e., if the database is set to English).
- * @returns True if English mode is enabled, otherwise false.
- */
-export const getEngMode = (): boolean =>
-    database.name === 'eng' ? true : false;
+/** Whether the active dataset is the English one. */
+export const getEngMode = (): boolean => database.name === LANGUAGE.ENGLISH;
 
-/**
- * Enables or disables English mode by switching the database between Thai and English.
- * @param status - True to enable English mode, false to disable.
- */
-export const setEngMode = async (status: boolean): Promise<void> => {
-    await ensureDatabaseInitialized();
-    if (status) database = await DatabaseFactory.createDatabase('eng');
-    else database = await DatabaseFactory.createDatabase('thai');
-
-    // Update the database for search and address services
+/** Switches the active dataset between English and Thai. */
+export const setEngMode = async (enabled: boolean): Promise<void> => {
+    await ensureInitialised();
+    database = await DatabaseFactory.createDatabase(
+        enabled ? LANGUAGE.ENGLISH : LANGUAGE.THAI,
+    );
     search.setDatabase(database);
     address.setDatabase(database);
 };
 
-/**
- * Retrieves all unique provinces from the database.
- * @returns An array of province names.
- */
+/** All province names. */
 export const getProvinceAll = async (): Promise<string[]> => {
-    await ensureDatabaseInitialized();
+    await ensureInitialised();
     return address.getProvinceAll();
 };
 
-/**
- * Retrieves districts for a given province.
- * @param province - The province to filter districts by.
- * @returns An array of district names.
- */
+/** District names within `province` (empty array if it is unknown). */
 export const getDistrictByProvince = async (
     province: string,
 ): Promise<string[]> => {
-    await ensureDatabaseInitialized();
+    await ensureInitialised();
     return address.getDistrictByProvince(province);
 };
 
-/**
- * Retrieves sub-districts for a given district.
- * @param district - The district to filter sub-districts by.
- * @returns An array of sub-district names.
- */
+/** Sub-district names within `district` (empty array if it is unknown). */
 export const getSubDistrictByDistrict = async (
     district: string,
 ): Promise<string[]> => {
-    await ensureDatabaseInitialized();
+    await ensureInitialised();
     return address.getSubDistrictByDistrict(district);
 };
 
-/**
- * Retrieves postal codes for a given sub-district.
- * @param sub_district - The sub-district to filter postal codes by.
- * @returns An array of postal codes.
- */
+/** Postal codes used by `subDistrict` (empty array if it is unknown). */
 export const getPostalCodeBySubDistrict = async (
-    sub_district: string,
+    subDistrict: string,
 ): Promise<string[]> => {
-    await ensureDatabaseInitialized();
-    return address.getPostalCodeBySubDistrict(sub_district);
+    await ensureInitialised();
+    return address.getPostalCodeBySubDistrict(subDistrict);
 };
 
-/**
- * Searches for addresses by province.
- * @param searchStr - The search string for the province.
- * @param maxResult - Optional limit on the number of results.
- * @returns An array of matching address data.
- */
+/** Rows whose province contains `query` (case-insensitive substring). */
 export const searchAddressByProvince = async (
-    searchStr: string,
-    maxResult?: number,
+    query: string,
+    limit?: number,
 ): Promise<IExpanded[]> => {
-    await ensureDatabaseInitialized();
-    return search.searchAddressByProvince(searchStr, maxResult);
+    await ensureInitialised();
+    return search.searchAddressByProvince(query, limit);
 };
 
-/**
- * Searches for addresses by district.
- * @param searchStr - The search string for the district.
- * @param maxResult - Optional limit on the number of results.
- * @returns An array of matching address data.
- */
+/** Rows whose district contains `query` (case-insensitive substring). */
 export const searchAddressByDistrict = async (
-    searchStr: string,
-    maxResult?: number,
+    query: string,
+    limit?: number,
 ): Promise<IExpanded[]> => {
-    await ensureDatabaseInitialized();
-    return search.searchAddressByDistrict(searchStr, maxResult);
+    await ensureInitialised();
+    return search.searchAddressByDistrict(query, limit);
 };
 
-/**
- * Searches for addresses by sub-district.
- * @param searchStr - The search string for the sub-district.
- * @param maxResult - Optional limit on the number of results.
- * @returns An array of matching address data.
- */
+/** Rows whose sub-district contains `query` (case-insensitive substring). */
 export const searchAddressBySubDistrict = async (
-    searchStr: string,
-    maxResult?: number,
+    query: string,
+    limit?: number,
 ): Promise<IExpanded[]> => {
-    await ensureDatabaseInitialized();
-    return search.searchAddressBySubDistrict(searchStr, maxResult);
+    await ensureInitialised();
+    return search.searchAddressBySubDistrict(query, limit);
 };
 
-/**
- * Searches for addresses by postal code.
- * @param searchStr - The search string for the postal code (can be string or number).
- * @param maxResult - Optional limit on the number of results.
- * @returns An array of matching address data.
- */
+/** Rows whose postal code contains `query` (accepts a number). */
 export const searchAddressByPostalCode = async (
-    searchStr: string | number,
-    maxResult?: number,
+    query: string | number,
+    limit?: number,
 ): Promise<IExpanded[]> => {
-    await ensureDatabaseInitialized();
-    return search.searchAddressByPostalCode(searchStr, maxResult);
+    await ensureInitialised();
+    return search.searchAddressByPostalCode(query, limit);
 };
 
 /**
- * Splits a full address string into its components (province, district, sub-district, postal code).
- * @param fullAddress - The full address string to split.
- * @returns An object containing the address components, or null if parsing fails.
+ * Splits a free-text address into `{ province, district, sub_district,
+ * postal_code, address }`, or `null` when it cannot be resolved confidently.
  */
 export const splitAddress = async (
     fullAddress: string,
 ): Promise<IExpanded | null> => {
-    await ensureDatabaseInitialized();
+    await ensureInitialised();
     return search.splitAddress(fullAddress);
 };
 
 /**
- * Translates a word between Thai and English.
- * @param text - The word to translate.
- * @returns The translated word, or the original word if no translation is found.
+ * Translates a single place name between Thai and English, returning the input
+ * unchanged when it has no counterpart.
  */
-export const translateWord = async (text: string): Promise<string> =>
-    await translate.translateWord(text);
+export const translateWord = async (text: string): Promise<string> => {
+    await ensureInitialised();
+    return translate.translateWord(text);
+};
+
+/** Options for {@link preload}. */
+export interface PreloadOptions {
+    /**
+     * Which dataset(s) to fetch: `'thai'`, `'eng'`, or `'both'`. Defaults to
+     * the host's default language.
+     */
+    language?: Language | 'both';
+    /** Also fetch the geocode chunk (without turning geo mode on). */
+    geo?: boolean;
+}
+
+/**
+ * Fetches the data chunks ahead of time so the first real lookup does not have
+ * to wait on the network. Purely a warm-up: it never changes the active
+ * language or geo mode.
+ *
+ * @example
+ * // e.g. when an address form mounts
+ * void preload({ language: 'both', geo: true });
+ */
+export const preload = async (options: PreloadOptions = {}): Promise<void> => {
+    const { language = getDefaultLanguage(), geo = false } = options;
+    const languages =
+        language === 'both' ? [LANGUAGE.THAI, LANGUAGE.ENGLISH] : [language];
+
+    await Promise.all([
+        ensureInitialised(),
+        ...languages.map((lang) => DatabaseFactory.createDatabase(lang)),
+        geo ? new Geo().load() : Promise.resolve(),
+    ]);
+};

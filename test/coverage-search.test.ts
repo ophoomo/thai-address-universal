@@ -1,6 +1,6 @@
 import { SearchRepository } from '../src/core/search';
-import { IDatabase } from '../src/types/database';
-import { IExpanded } from '../src/types/thai-address.d';
+import type { IDatabase } from '../src/types/database';
+import type { IExpanded } from '../src/types/thai-address';
 
 describe('SearchRepository - Error handling coverage', () => {
     let searchRepository: SearchRepository;
@@ -39,7 +39,7 @@ describe('SearchRepository - Error handling coverage', () => {
                 throw new Error('Database connection error');
             });
 
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'province',
                 'Bangkok',
             );
@@ -62,7 +62,7 @@ describe('SearchRepository - Error handling coverage', () => {
                 ] as unknown as IExpanded[];
             });
 
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'district',
                 'Pathum',
             );
@@ -92,7 +92,7 @@ describe('SearchRepository - Error handling coverage', () => {
                 badData as unknown as IExpanded[],
             );
 
-            const results = searchRepository['resolveResultbyField'](
+            const results = searchRepository.resolveResultbyField(
                 'district',
                 'Test',
             );
@@ -105,38 +105,35 @@ describe('SearchRepository - Error handling coverage', () => {
         });
     });
 
-    describe('Cache get fallback coverage', () => {
-        it('should return empty array from cache.get() fallback', () => {
-            // Set cache to empty result
-            searchRepository['resolveResultbyField']('province', 'NonExistent');
-
-            // Second call should use cache and test || [] fallback
-            const results = searchRepository['resolveResultbyField'](
+    describe('caching', () => {
+        it('serves an identical result from cache on the second call', () => {
+            const first = searchRepository.resolveResultbyField(
                 'province',
-                'NonExistent',
+                'Bangkok',
             );
-
-            expect(results).toEqual([]);
+            const second = searchRepository.resolveResultbyField(
+                'province',
+                'Bangkok',
+            );
+            expect(second).toBe(first); // same reference => cache hit
+            expect(mockDatabase.getData).toHaveBeenCalledTimes(1);
         });
 
-        it('should return [] when cache entry exists but value is undefined', () => {
-            const cache = (
-                searchRepository as unknown as Record<
-                    string,
-                    Map<string, unknown>
-                >
-            )._searchCache;
-            // insert key with explicit undefined value to hit `|| []` fallback
-            (cache as unknown as Map<string, unknown | undefined>).set(
-                'province_nonexistent_20_thai',
-                undefined,
-            );
+        it('keys the cache by field, query, limit and language', () => {
+            searchRepository.resolveResultbyField('province', 'Bangkok');
+            searchRepository.resolveResultbyField('province', 'Bangkok', 1);
+            searchRepository.resolveResultbyField('district', 'Bangkok');
+            expect(mockDatabase.getData).toHaveBeenCalledTimes(3);
+        });
 
-            const results = searchRepository['resolveResultbyField'](
-                'province',
-                'nonexistent',
-            );
-            expect(results).toEqual([]);
+        it('drops the cache when a different language dataset is attached', () => {
+            searchRepository.resolveResultbyField('province', 'Bangkok');
+            searchRepository.setDatabase({
+                ...mockDatabase,
+                name: 'eng',
+            } as IDatabase);
+            searchRepository.resolveResultbyField('province', 'Bangkok');
+            expect(mockDatabase.getData).toHaveBeenCalledTimes(2);
         });
     });
 });

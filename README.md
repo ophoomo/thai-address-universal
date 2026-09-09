@@ -19,7 +19,7 @@ Thai Address Universal is a library developed from [thai-address-database](https
 This library includes various functions that assist in searching for address data in Thailand 🇹🇭 from multiple types, and it can also extract address information from a full address string conveniently and accurately 🏠🔍.
 
 <p align="center">
-<a href="https://ophoomo.github.io/thai-address-universal/index.html">📄TypeDoc</a>
+<a href="https://ophoomo.github.io/thai-address-universal/">📄 Documentation</a>
 </p>
 
 ## 🛠️ Installation
@@ -115,6 +115,96 @@ splitAddress (fullAddress: string): Promise<IExpanded | null>
 ```typescript
 translateWord (word: string): Promise<string>
 ```
+
+## 🆕 New in v2.2.0
+
+### Structured directory
+
+Returns entries carrying **both languages and the official geocode**
+(`AddressEntry = { nameTh, nameEn, code, postalCode? }`), independent of the
+global `setEngMode` / `setGeoMode` switches. Every function accepts the
+parent's Thai name, English name, or numeric code.
+
+```typescript
+getProvinces (): Promise<AddressEntry[]>
+```
+
+All 77 provinces — e.g. `{ nameTh: 'เชียงใหม่', nameEn: 'Chiang Mai', code: '50' }`.
+
+```typescript
+getDistricts (province: string): Promise<AddressEntry[]>
+```
+
+Districts of `province` (given as a name in either language, or a 2-digit code).
+
+```typescript
+getSubDistricts (district: string): Promise<AddressEntry[]>
+```
+
+Sub-districts of `district`, each including its `postalCode`.
+
+```typescript
+getByGeocode (code: string): Promise<AddressEntry | null>
+```
+
+Looks up a single unit by its exact geocode; the length of `code` (2 / 4 / 6)
+selects the level. `null` for an unknown code.
+
+### Validation
+
+```typescript
+validateAddress (
+    input: { province?; district?; subDistrict?; postalCode? },
+    options?: { language?: 'thai' | 'eng' },
+): Promise<{ valid: boolean; errors: Record<string, string>; match?: IExpanded }>
+```
+
+Checks that the given parts exist **and belong together** (a district that sits
+in the province, a postal code that serves the sub-district, …). Only the
+fields you pass are checked, so it works on a partially filled form; the chain
+stops at the first inconsistent field and names it in `errors`.
+
+```typescript
+await validateAddress({ province: 'เชียงใหม่', district: 'หาดใหญ่' });
+// { valid: false, errors: { district: 'District "หาดใหญ่" is not in province "เชียงใหม่"' } }
+```
+
+### Formatting
+
+```typescript
+formatAddress (
+    parts: { address?; subDistrict?; district?; province?; postalCode? },
+    options?: { language?: 'thai' | 'eng'; prefix?: boolean; separator?: string },
+): string
+```
+
+The inverse of `splitAddress` — assembles one address string (synchronous, no
+data load). Blank parts are skipped; Bangkok automatically switches to
+แขวง / เขต and drops the province word.
+
+```typescript
+formatAddress({
+    address: '99/9',
+    subDistrict: 'ศรีภูมิ',
+    district: 'เมืองเชียงใหม่',
+    province: 'เชียงใหม่',
+    postalCode: '50200',
+});
+// "99/9 ตำบลศรีภูมิ อำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50200"
+```
+
+### Warm-up
+
+```typescript
+preload (options?: { language?: 'thai' | 'eng' | 'both'; geo?: boolean }): Promise<void>
+```
+
+Fetches the data chunks ahead of time so the first real lookup does not wait on
+the network. Never changes the active language or geo mode — e.g. call it when
+an address form mounts.
+
+> Full per-symbol API reference (generated from the source): <https://ophoomo.github.io/thai-address-universal/>
+> — see also [`llms.txt`](./llms.txt) for a condensed, example-heavy overview.
 
 ## 🙏 Acknowledgements
 

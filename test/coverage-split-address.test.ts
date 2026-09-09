@@ -1,5 +1,5 @@
+import type { IExpanded } from '../src/types/thai-address';
 import { cleanupAddress } from '../src/utils/split-address';
-import { IExpanded } from '../src/types/thai-address';
 
 describe('Split Address - Branch coverage for cleanupAddress', () => {
     describe('cleanupAddress - fieldValue falsy check', () => {

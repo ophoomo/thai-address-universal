@@ -1,5 +1,5 @@
 import { Address } from '../src/core/address';
-import { IDatabase } from '../src/types/database';
+import type { IDatabase } from '../src/types/database';
 
 describe('Address Class - Cache Logic', () => {
     let address: Address;
