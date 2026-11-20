@@ -33,18 +33,54 @@ describe('formatAddress', () => {
         ).toBe('1 ถนนพระราม 1 แขวงลุมพินี เขตปทุมวัน กรุงเทพมหานคร 10330');
     });
 
-    it('uses the transliterated words in English mode', () => {
+    it('leaves the prefixes out by default in English mode', () => {
+        expect(
+            formatAddress(
+                {
+                    address: '99/9',
+                    subDistrict: 'Si Phum',
+                    district: 'Mueang Chiang Mai',
+                    province: 'Chiang Mai',
+                    postalCode: '50200',
+                },
+                { language: 'eng' },
+            ),
+        ).toBe('99/9 Si Phum Mueang Chiang Mai Chiang Mai 50200');
+
+        expect(
+            formatAddress(
+                {
+                    subDistrict: 'Lumphini',
+                    district: 'Pathum Wan',
+                    province: 'Bangkok',
+                    postalCode: '10330',
+                },
+                { language: 'eng', separator: ', ' },
+            ),
+        ).toBe('Lumphini, Pathum Wan, Bangkok, 10330');
+    });
+
+    it('still prefixes Thai by default (the default depends on the language)', () => {
+        expect(
+            formatAddress(
+                { subDistrict: 'ศรีภูมิ', district: 'เมืองเชียงใหม่' },
+                { language: 'thai' },
+            ),
+        ).toBe('ตำบลศรีภูมิ อำเภอเมืองเชียงใหม่');
+    });
+
+    it('uses the transliterated words in English mode when asked', () => {
         expect(
             formatAddress(
                 { subDistrict: 'Si Phum', district: 'Mueang Chiang Mai' },
-                { language: 'eng' },
+                { language: 'eng', prefix: true },
             ),
         ).toBe('Tambon Si Phum Amphoe Mueang Chiang Mai');
 
         expect(
             formatAddress(
                 { district: 'Pathum Wan', province: 'Bangkok' },
-                { language: 'eng' },
+                { language: 'eng', prefix: true },
             ),
         ).toBe('Khet Pathum Wan Bangkok');
     });

@@ -29,7 +29,13 @@ export interface FormatAddressOptions {
     language?: Language;
     /**
      * Prefix each component with its administrative word (ตำบล / อำเภอ / …,
-     * or แขวง / เขต for Bangkok). Defaults to `true`.
+     * or แขวง / เขต for Bangkok).
+     *
+     * Defaults to `true` in Thai and `false` in English: written Thai always
+     * introduces each component, while English addresses conventionally list
+     * the bare names ("Si Phum, Mueang Chiang Mai, Chiang Mai") — the Universal
+     * Postal Union treats the administrative words as optional. Pass `true` to
+     * get "Tambon / Amphoe / Changwat" (or "Khwaeng / Khet" for Bangkok).
      */
     prefix?: boolean;
     /** String placed between components. Defaults to a single space. */
@@ -51,8 +57,9 @@ const prefixSet = (language: Language, bangkok: boolean) => {
  * `splitAddress`.
  *
  * Components that are absent or blank are skipped. With `prefix` on (the
- * default) each component is introduced by its administrative word, switching
- * to แขวง / เขต automatically when the province is Bangkok.
+ * default in Thai, off in English) each component is introduced by its
+ * administrative word, switching to แขวง / เขต automatically when the province
+ * is Bangkok.
  *
  * @example
  * formatAddress({
@@ -67,6 +74,10 @@ const prefixSet = (language: Language, bangkok: boolean) => {
  * @example
  * formatAddress(parts, { prefix: false, separator: ', ' });
  * // "99/9, ศรีภูมิ, เมืองเชียงใหม่, เชียงใหม่, 50200"
+ *
+ * @example
+ * formatAddress(englishParts, { language: 'eng', separator: ', ' });
+ * // "99/9, Si Phum, Mueang Chiang Mai, Chiang Mai, 50200"
  */
 export const formatAddress = (
     parts: AddressParts,
@@ -74,7 +85,7 @@ export const formatAddress = (
 ): string => {
     const {
         language = LANGUAGE.THAI,
-        prefix = true,
+        prefix = language !== LANGUAGE.ENGLISH,
         separator = ' ',
     } = options;
 

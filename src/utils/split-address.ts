@@ -1,6 +1,8 @@
 import {
     ADDRESS_COMPONENT_FIELDS,
+    ADDRESS_COMPONENT_LEADING_PREFIX_PATTERN,
     ADDRESS_COMPONENT_PREFIX_PATTERN,
+    ADDRESS_WORD_SEPARATOR_PATTERN,
     BANGKOK_ALIAS_PATTERN,
     BANGKOK_CANONICAL_NAME,
     escapeRegExp,
@@ -11,8 +13,10 @@ import type { IExpanded, IExpandedWithPoint } from '../types/thai-address';
 /**
  * Normalises a free-text address before matching:
  *  1. every way of writing Bangkok collapses to its canonical name;
- *  2. the postal code, filler tokens and component prefixes ("ต.", "จังหวัด", …)
- *     are removed.
+ *  2. the postal code and filler tokens are removed;
+ *  3. component prefixes ("ต.", "จังหวัด", …) are removed where they introduce
+ *     a component — never from inside a name such as "สนามชัยเขต" or
+ *     "สามตำบล".
  *
  * @param address - The raw address string.
  * @param postalCode - The postal code already extracted from it.
@@ -25,16 +29,34 @@ export const prepareAddress = (address: string, postalCode: string): string => {
     );
 
     const removable = new RegExp(
-        [
-            escapeRegExp(postalCode),
-            NOISE_TOKEN_PATTERN.source,
-            ADDRESS_COMPONENT_PREFIX_PATTERN.source,
-        ].join('|'),
+        [escapeRegExp(postalCode), NOISE_TOKEN_PATTERN.source].join('|'),
         'g',
     );
 
-    return withCanonicalBangkok.replace(removable, '').trim();
+    return withCanonicalBangkok
+        .replace(removable, '')
+        .replace(ADDRESS_COMPONENT_LEADING_PREFIX_PATTERN, '$1')
+        .trim();
 };
+
+/** Splits text into words on whitespace and commas. */
+const toWords = (text: string): string[] =>
+    text.split(ADDRESS_WORD_SEPARATOR_PATTERN).filter(Boolean);
+
+/**
+ * An optional component prefix still attached to the front of a word.
+ * {@link prepareAddress} leaves "ต." in "ต.จ.ป.ร." (it cannot tell the prefix
+ * from the abbreviated name), so word matching tolerates one left in place.
+ */
+const ATTACHED_PREFIX = `(?:${ADDRESS_COMPONENT_PREFIX_PATTERN.source})?`;
+
+/** Whether `word` is `name`, possibly with a component prefix glued on. */
+const isWordFor = (word: string, name: string): boolean =>
+    word === name ||
+    (word.endsWith(name) &&
+        new RegExp(`^${ATTACHED_PREFIX}$`).test(
+            word.slice(0, word.length - name.length),
+        ));
 
 /**
  * Number of address components ({@link ADDRESS_COMPONENT_FIELDS}) of `element`
@@ -54,33 +76,57 @@ export const calculateMatchPoints = (
     return points;
 };
 
+/** How well a row's components line up with the words of the address. */
+interface WordPlacement {
+    /** Components found as whole words, each on words no other one uses. */
+    placed: number;
+    /** Distinct words of the address those components account for. */
+    covered: number;
+}
+
 /**
- * Counts how many distinct whitespace-separated words of `address` are
- * explained by this row's components.
+ * Places each component of `element` on its own whole-word occurrence in
+ * `words` — longest name first, no two components sharing a word.
  *
- * A row that maps its sub-district and district onto two different words
- * accounts for more of the address than one that reuses a single word for
- * both — which is exactly what happens when a district has a same-named
- * sub-district.
+ * Whole words matter because {@link calculateMatchPoints} only checks for
+ * substrings: the district "บางแค" also "appears" inside the sub-district
+ * "บางแคเหนือ". Not sharing words matters because a short name can be part of
+ * a longer one: the sub-district "Phanom" is the last word of the province
+ * "Nakhon Phanom", and must not be counted as present on the strength of it.
  */
-const distinctWordsCovered = (
+const placeComponents = (
     element: IExpandedWithPoint,
     words: string[],
-): number => {
-    const covered = new Set<string>();
-    for (const field of ADDRESS_COMPONENT_FIELDS) {
-        const value = element[field];
-        for (const word of words) {
-            if (
-                word === value ||
-                word.includes(value) ||
-                value.includes(word)
-            ) {
-                covered.add(word);
+): WordPlacement => {
+    const used = new Set<number>();
+    let placed = 0;
+
+    const values = ADDRESS_COMPONENT_FIELDS.map((field) => element[field]).sort(
+        (a, b) => b.length - a.length,
+    );
+    for (const value of values) {
+        const target = toWords(value);
+        if (target.length === 0) {
+            continue;
+        }
+        for (let start = 0; start + target.length <= words.length; start++) {
+            const fits = target.every(
+                (word, offset) =>
+                    !used.has(start + offset) &&
+                    (offset === 0
+                        ? isWordFor(words[start], word)
+                        : words[start + offset] === word),
+            );
+            if (fits) {
+                for (let offset = 0; offset < target.length; offset++) {
+                    used.add(start + offset);
+                }
+                placed++;
+                break;
             }
         }
     }
-    return covered.size;
+    return { placed, covered: used.size };
 };
 
 /**
@@ -88,10 +134,11 @@ const distinctWordsCovered = (
  * code.
  *
  * Any row whose district, sub-district and province all appear in `address` is
- * a candidate. Ties (a district with a same-named sub-district, or several
- * sub-districts of one district on the same postal code) are broken by, in
- * order: most distinct words of the address covered, then whether the
- * sub-district stands alone as a word.
+ * a candidate. Ties (a district with a same-named sub-district, a sub-district
+ * whose name starts with its district's, or several sub-districts of one
+ * district on the same postal code) are broken by, in order: most components
+ * placed on whole words of their own, most distinct words covered, then
+ * whether the sub-district stands alone as a word.
  *
  * @returns The winning row with its `point` score, or `null` when no row has
  *          all three components present.
@@ -114,33 +161,56 @@ export const getBestResult = (
         return candidates[0];
     }
 
-    const words = address.split(/\s+/).filter(Boolean);
-    const subDistrictIsOwnWord = (element: IExpandedWithPoint): number =>
-        words.includes(element.sub_district) ? 1 : 0;
+    const words = toWords(address);
+    const ranked = candidates.map((element) => ({
+        element,
+        ...placeComponents(element, words),
+        subDistrictIsOwnWord: words.includes(element.sub_district) ? 1 : 0,
+    }));
 
     // `sort` is stable, so a full tie preserves the original row order.
-    return [...candidates].sort(
+    ranked.sort(
         (a, b) =>
-            distinctWordsCovered(b, words) - distinctWordsCovered(a, words) ||
-            subDistrictIsOwnWord(b) - subDistrictIsOwnWord(a),
-    )[0];
+            b.placed - a.placed ||
+            b.covered - a.covered ||
+            b.subDistrictIsOwnWord - a.subDistrictIsOwnWord,
+    );
+    return ranked[0].element;
 };
 
 /**
  * Removes the matched components of `result` from `address`, leaving only the
  * house number / street / village part.
  *
+ * Longer names go first and are removed as whole words, so a district such as
+ * "คลองท่อม" is never cut out of the sub-district "คลองท่อมเหนือ". A name
+ * glued to other text (no separator) falls back to plain substring removal.
+ * Separators left dangling at either end are trimmed.
+ *
  * @param address - The prepared address string.
  * @param result - The row {@link getBestResult} chose.
  * @returns The trimmed remainder.
  */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
+    const values = ADDRESS_COMPONENT_FIELDS.map((field) => result[field])
+        .filter((value): value is string => Boolean(value))
+        .sort((a, b) => b.length - a.length);
+
     let remainder = address;
-    for (const field of ADDRESS_COMPONENT_FIELDS) {
-        const value = result[field];
-        if (value) {
-            remainder = remainder.replace(` ${value}`, '');
-        }
+    for (const value of values) {
+        const wholeWord = new RegExp(
+            `(?:^|[\\s,]+)${ATTACHED_PREFIX}${escapeRegExp(value)}(?=$|[\\s,])`,
+            'g',
+        );
+        // Components follow the house part, so take the last occurrence: a
+        // house word with the same name ("หมู่บ้าน บางแค") must survive.
+        const matches = [...remainder.matchAll(wholeWord)];
+        const last = matches[matches.length - 1];
+        remainder =
+            last?.index !== undefined
+                ? remainder.slice(0, last.index) +
+                  remainder.slice(last.index + last[0].length)
+                : remainder.replace(` ${value}`, '');
     }
-    return remainder.trim();
+    return remainder.replace(/^[\s,]+|[\s,]+$/g, '');
 };

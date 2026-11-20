@@ -99,7 +99,8 @@ formatAddress({
 // "99/9 แขวงลุมพินี เขตปทุมวัน กรุงเทพมหานคร 10330"  (Bangkok -> แขวง/เขต automatically)
 
 formatAddress(parts, { prefix: false, separator: ', ' });      // "99/9, ลุมพินี, ปทุมวัน, …"
-formatAddress(parts, { language: 'eng' });                     // "… Khwaeng Lumphini Khet Pathum Wan Bangkok"
+formatAddress(engParts, { language: 'eng' });                  // "99/9 Lumphini Pathum Wan Bangkok 10330" (no prefixes by default in English)
+formatAddress(engParts, { language: 'eng', prefix: true });     // "99/9 Khwaeng Lumphini Khet Pathum Wan Bangkok 10330"
 ```
 
 ### Search-as-you-type

@@ -136,10 +136,11 @@ export const LATIN_LETTER_PATTERN = /[a-zA-Z]/g;
 
 /**
  * Extracts the postal code from a free-text address: {@link POSTAL_CODE_LENGTH}
- * digits framed by whitespace or the end of the string.
+ * digits framed by whitespace, a comma or the end of the string, so
+ * "…, เชียงใหม่ 50200", "…,เชียงใหม่,50200" and "… 50200, Thailand" all work.
  */
 export const POSTAL_CODE_PATTERN = new RegExp(
-    `\\s(\\d{${POSTAL_CODE_LENGTH}})(\\s|$)`,
+    `[\\s,](\\d{${POSTAL_CODE_LENGTH}})(?=[\\s,]|$)`,
     'i',
 );
 
@@ -147,11 +148,50 @@ export const POSTAL_CODE_PATTERN = new RegExp(
 export const escapeRegExp = (value: string): string =>
     value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** {@link ADDRESS_COMPONENT_PREFIXES} as a longest-first regex alternation. */
+const ADDRESS_COMPONENT_PREFIX_ALTERNATION = [...ADDRESS_COMPONENT_PREFIXES]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join('|');
+
 /** Matches any {@link ADDRESS_COMPONENT_PREFIXES} entry (e.g. "ต.", "ตำบล"). */
 export const ADDRESS_COMPONENT_PREFIX_PATTERN = new RegExp(
-    ADDRESS_COMPONENT_PREFIXES.map(escapeRegExp).join('|'),
+    ADDRESS_COMPONENT_PREFIX_ALTERNATION,
     'g',
 );
+
+/** Any character of the Thai Unicode block (letters, vowels, tone marks). */
+const THAI_CHARACTER_CLASS = '[\\u0E00-\\u0E7F]';
+
+/**
+ * Matches an {@link ADDRESS_COMPONENT_PREFIXES} entry only where it introduces
+ * a component: at the start of the string or after a non-Thai character (a
+ * space, comma, digit, …), so "ต.ศรีภูมิ" and "99/9ต.ศรีภูมิ" lose the prefix
+ * while names that merely contain one ("สนามชัยเขต", "สามตำบล", "หลักเขต")
+ * stay intact. An abbreviation followed by another abbreviated letter
+ * ("จ.ป.ร.") is a name, not a prefix, and is left alone too.
+ *
+ * Group 1 captures the preceding character; replace with `"$1"` to keep it.
+ * (A capture group rather than a lookbehind keeps the UMD build working on
+ * older browsers.)
+ */
+export const ADDRESS_COMPONENT_LEADING_PREFIX_PATTERN = new RegExp(
+    `(^|[^\\u0E00-\\u0E7F])(?:${[...ADDRESS_COMPONENT_PREFIXES]
+        .sort((a, b) => b.length - a.length)
+        .map((prefix) =>
+            prefix.endsWith('.')
+                ? `${escapeRegExp(prefix)}(?!${THAI_CHARACTER_CLASS}\\.)`
+                : escapeRegExp(prefix),
+        )
+        .join('|')})`,
+    'g',
+);
+
+/**
+ * Characters that separate words of a free-text address. Dots are not
+ * included: they belong to abbreviations such as "จ.ป.ร.".
+ */
+export const ADDRESS_WORD_SEPARATOR_PATTERN = /[\s,]+/;
 
 /**
  * Matches any {@link BANGKOK_ALIASES} entry. Longest-first so "กรุงเทพมหานคร"

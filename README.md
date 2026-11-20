@@ -180,7 +180,8 @@ formatAddress (
 
 The inverse of `splitAddress` — assembles one address string (synchronous, no
 data load). Blank parts are skipped; Bangkok automatically switches to
-แขวง / เขต and drops the province word.
+แขวง / เขต and drops the province word. `prefix` defaults to `true` in Thai and
+`false` in English, where addresses conventionally list the bare names.
 
 ```typescript
 formatAddress({
