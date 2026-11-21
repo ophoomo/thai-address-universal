@@ -27,6 +27,7 @@ describe('resolveResultbyField Function', () => {
                     postal_code: '50200',
                 },
             ]),
+            getGeo: jest.fn(() => undefined),
         } as unknown as IDatabase;
 
         searchRepository = new SearchRepository(mockDatabase);

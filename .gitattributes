@@ -1,0 +1,10 @@
+# Keep LF in the working tree on every OS (Biome's formatter expects LF, and
+# Windows' core.autocrlf would otherwise check files out as CRLF).
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ico binary
+*.gz binary
+*.br binary

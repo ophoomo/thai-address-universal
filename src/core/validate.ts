@@ -1,17 +1,35 @@
-import { LANGUAGE, type Language } from '../constants';
+import type { Language } from '../constants';
 import type { IExpanded } from '../types/thai-address';
+import { inferLanguage } from '../utils/language';
 import { DatabaseFactory } from './database';
 
-/** The address a caller wants checked. Every field is optional. */
+/**
+ * The address a caller wants checked. Every field is optional.
+ *
+ * `sub_district` / `postal_code` are accepted as aliases of `subDistrict` /
+ * `postalCode`, so a `splitAddress` result can be validated directly. When
+ * both spellings are given, the camelCase one wins.
+ */
 export interface AddressInput {
     province?: string;
     district?: string;
     subDistrict?: string;
+    /** Same as `subDistrict`, spelled the way `splitAddress` returns it. */
+    sub_district?: string;
     postalCode?: string | number;
+    /** Same as `postalCode`, spelled the way `splitAddress` returns it. */
+    postal_code?: string | number;
 }
 
-/** Fields {@link validateAddress} can report an error against. */
-export type AddressField = keyof AddressInput;
+/**
+ * Fields {@link validateAddress} can report an error against. Errors always
+ * use the camelCase name, whichever spelling the input used.
+ */
+export type AddressField =
+    | 'province'
+    | 'district'
+    | 'subDistrict'
+    | 'postalCode';
 
 /** Outcome of {@link validateAddress}. */
 export interface AddressValidationResult {
@@ -25,7 +43,10 @@ export interface AddressValidationResult {
 
 /** Options for {@link validateAddress}. */
 export interface ValidateAddressOptions {
-    /** Dataset language the names are in. Defaults to Thai. */
+    /**
+     * Dataset language the names are in. When omitted it follows the names:
+     * English if they are written in Latin letters only, Thai otherwise.
+     */
     language?: Language;
 }
 
@@ -70,9 +91,16 @@ const normalise = (value: string | number): string =>
  * // { valid: false, errors: { district: 'District "หาดใหญ่" is not in province "เชียงใหม่"' } }
  */
 export const validateAddress = async (
-    input: AddressInput,
+    rawInput: AddressInput,
     options: ValidateAddressOptions = {},
 ): Promise<AddressValidationResult> => {
+    const input: Pick<AddressInput, AddressField> = {
+        province: rawInput.province,
+        district: rawInput.district,
+        subDistrict: rawInput.subDistrict ?? rawInput.sub_district,
+        postalCode: rawInput.postalCode ?? rawInput.postal_code,
+    };
+
     const provided = CHAIN.filter(({ input: field }) => {
         const value = input[field];
         return value !== undefined && value.toString().trim() !== '';
@@ -83,7 +111,8 @@ export const validateAddress = async (
     }
 
     const database = await DatabaseFactory.createDatabase(
-        options.language ?? LANGUAGE.THAI,
+        options.language ??
+            inferLanguage([input.province, input.district, input.subDistrict]),
     );
 
     let rows = database.getData();

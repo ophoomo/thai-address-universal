@@ -19,8 +19,11 @@
  */
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const DIST = new URL('../dist/', import.meta.url).pathname;
+// `fileURLToPath`, not `.pathname`: the latter keeps percent-encoding and a
+// leading slash before the drive letter, which breaks on Windows.
+const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
 const ESM_TYPES = join(DIST, 'esm', 'types');
 const CJS_TYPES = join(DIST, 'cjs', 'types');
 
