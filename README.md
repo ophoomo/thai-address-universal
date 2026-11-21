@@ -163,6 +163,9 @@ Checks that the given parts exist **and belong together** (a district that sits
 in the province, a postal code that serves the sub-district, …). Only the
 fields you pass are checked, so it works on a partially filled form; the chain
 stops at the first inconsistent field and names it in `errors`.
+`sub_district` / `postal_code` are accepted too, so a `splitAddress` result can
+be passed straight in. `language` defaults to the script the names are written
+in (Latin-only → English, otherwise Thai).
 
 ```typescript
 await validateAddress({ province: 'เชียงใหม่', district: 'หาดใหญ่' });
@@ -182,6 +185,11 @@ The inverse of `splitAddress` — assembles one address string (synchronous, no
 data load). Blank parts are skipped; Bangkok automatically switches to
 แขวง / เขต and drops the province word. `prefix` defaults to `true` in Thai and
 `false` in English, where addresses conventionally list the bare names.
+`language` defaults to the script the names are written in (Latin-only →
+English, otherwise Thai), and `sub_district` / `postal_code` are accepted as
+aliases, so `formatAddress(await splitAddress(text))` works in either mode.
+`splitAddress` reads back every style `formatAddress` writes, including the
+English `Tambon` / `Amphoe` / `Changwat` (`Khwaeng` / `Khet`) words.
 
 ```typescript
 formatAddress({

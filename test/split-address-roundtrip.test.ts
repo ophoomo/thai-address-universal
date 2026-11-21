@@ -177,26 +177,18 @@ describe('splitAddress round trip — English dataset', () => {
         expect(await roundTripFailures(parsableRows(), style)).toEqual([]);
     });
 
-    // English prefix words (Tambon / Amphoe / …) are opt-in and are not
-    // stripped, so only the resolved components are checked, not the leftover
-    // house part.
-    it('with prefix: true, every component resolves', async () => {
-        const style: AddressStyle = (row, house) =>
-            formatAddress(
-                {
-                    address: house,
-                    subDistrict: row.sub_district,
-                    district: row.district,
-                    province: row.province,
-                    postalCode: row.postal_code,
-                },
-                { language: 'eng', prefix: true },
-            );
-        expect(
-            await roundTripFailures(parsableRows(), style, {
-                checkHouse: false,
-            }),
-        ).toEqual([]);
+    // Names that end in an English prefix word must keep it, even with the
+    // prefixed component that follows them (issue #50).
+    it('rows where a name contains an English prefix word exist and round-trip', async () => {
+        const rows = parsableRows().filter((row) =>
+            [row.sub_district, row.district].some((name) =>
+                /\b(Tambon|Amphoe|Changwat|Khwaeng|Khet)\b/.test(name),
+            ),
+        );
+        expect(rows.length).toBeGreaterThan(0);
+        for (const style of Object.values(ENGLISH_STYLES)) {
+            expect(await roundTripFailures(rows, style)).toEqual([]);
+        }
     });
 
     it('rows where a sub-district name is a word of the province name exist', () => {

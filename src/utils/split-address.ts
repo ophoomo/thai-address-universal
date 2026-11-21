@@ -3,8 +3,11 @@ import {
     ADDRESS_COMPONENT_LEADING_PREFIX_PATTERN,
     ADDRESS_COMPONENT_PREFIX_PATTERN,
     ADDRESS_WORD_SEPARATOR_PATTERN,
+    type AddressComponentField,
     BANGKOK_ALIAS_PATTERN,
     BANGKOK_CANONICAL_NAME,
+    BANGKOK_ENGLISH_NAME,
+    COMPONENT_PREFIX,
     escapeRegExp,
     NOISE_TOKEN_PATTERN,
 } from '../constants';
@@ -178,6 +181,42 @@ export const getBestResult = (
     return ranked[0].element;
 };
 
+/** Where each address component's word lives in {@link COMPONENT_PREFIX}. */
+const COMPONENT_PREFIX_KEY = {
+    sub_district: 'subDistrict',
+    district: 'district',
+    province: 'province',
+} as const satisfies Record<
+    AddressComponentField,
+    keyof (typeof COMPONENT_PREFIX)['eng']
+>;
+
+/** "Tambon" → "[Tt]ambon", so a lower-case "tambon" is recognised too. */
+const firstLetterCaseless = (word: string): string =>
+    `[${word[0].toUpperCase()}${word[0].toLowerCase()}]${escapeRegExp(word.slice(1))}`;
+
+/**
+ * An optional English administrative word ("Tambon ", "Amphoe ", …) in front
+ * of `field`, as `formatAddress` writes it with `prefix: true`.
+ *
+ * Only the word that belongs to that component is accepted — "Khet" in front
+ * of a Bangkok district, "Amphoe" in front of any other — rather than any
+ * prefix word anywhere. Several English names end in a prefix word ("Itan
+ * Khet", "Khini Khet", "Snam Chai Khet"), and those must not lose it to the
+ * component that follows them.
+ */
+const englishPrefixFor = (
+    field: AddressComponentField,
+    result: IExpanded,
+): string => {
+    const words =
+        result.province === BANGKOK_ENGLISH_NAME
+            ? COMPONENT_PREFIX.engBangkok
+            : COMPONENT_PREFIX.eng;
+    const word: string = words[COMPONENT_PREFIX_KEY[field]];
+    return word ? `${firstLetterCaseless(word)}\\s+` : '';
+};
+
 /**
  * Removes the matched components of `result` from `address`, leaving only the
  * house number / street / village part.
@@ -185,6 +224,8 @@ export const getBestResult = (
  * Longer names go first and are removed as whole words, so a district such as
  * "คลองท่อม" is never cut out of the sub-district "คลองท่อมเหนือ". A name
  * glued to other text (no separator) falls back to plain substring removal.
+ * The administrative word in front of a name — Thai ("ต.", glued on) or
+ * English ("Tambon ", see {@link englishPrefixFor}) — goes with it.
  * Separators left dangling at either end are trimmed.
  *
  * @param address - The prepared address string.
@@ -192,24 +233,33 @@ export const getBestResult = (
  * @returns The trimmed remainder.
  */
 export const cleanupAddress = (address: string, result: IExpanded): string => {
-    const values = ADDRESS_COMPONENT_FIELDS.map((field) => result[field])
-        .filter((value): value is string => Boolean(value))
-        .sort((a, b) => b.length - a.length);
+    const components = ADDRESS_COMPONENT_FIELDS.map((field) => ({
+        value: result[field],
+        englishPrefix: englishPrefixFor(field, result),
+    }))
+        .filter((component) => Boolean(component.value))
+        .sort((a, b) => b.value.length - a.value.length);
 
     let remainder = address;
-    for (const value of values) {
+    for (const { value, englishPrefix } of components) {
+        // Group 1 is the component's own English word, when it is present.
         const wholeWord = new RegExp(
-            `(?:^|[\\s,]+)${ATTACHED_PREFIX}${escapeRegExp(value)}(?=$|[\\s,])`,
+            `(?:^|[\\s,]+)(${englishPrefix})?${ATTACHED_PREFIX}${escapeRegExp(value)}(?=$|[\\s,])`,
             'g',
         );
-        // Components follow the house part, so take the last occurrence: a
-        // house word with the same name ("หมู่บ้าน บางแค") must survive.
         const matches = [...remainder.matchAll(wholeWord)];
-        const last = matches[matches.length - 1];
+        // When two components share a name ("Amphoe Phra Nakhon Si Ayutthaya
+        // Changwat Phra Nakhon Si Ayutthaya"), the occurrence introduced by
+        // this component's own word is the one that belongs to it. Otherwise
+        // components follow the house part, so take the last occurrence: a
+        // house word with the same name ("หมู่บ้าน บางแค") must survive.
+        const introduced = matches.filter((match) => match[1]);
+        const pool = introduced.length > 0 ? introduced : matches;
+        const chosen = pool[pool.length - 1];
         remainder =
-            last?.index !== undefined
-                ? remainder.slice(0, last.index) +
-                  remainder.slice(last.index + last[0].length)
+            chosen?.index !== undefined
+                ? remainder.slice(0, chosen.index) +
+                  remainder.slice(chosen.index + chosen[0].length)
                 : remainder.replace(` ${value}`, '');
     }
     return remainder.replace(/^[\s,]+|[\s,]+$/g, '');

@@ -96,6 +96,49 @@ describe('formatAddress', () => {
         expect(formatAddress({})).toBe('');
     });
 
+    it('accepts the snake_case fields splitAddress returns', () => {
+        expect(
+            formatAddress({
+                address: '99/9',
+                sub_district: 'ศรีภูมิ',
+                district: 'เมืองเชียงใหม่',
+                province: 'เชียงใหม่',
+                postal_code: '50200',
+            }),
+        ).toBe('99/9 ตำบลศรีภูมิ อำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50200');
+    });
+
+    it('prefers camelCase when both spellings are given', () => {
+        expect(
+            formatAddress({
+                subDistrict: 'ศรีภูมิ',
+                sub_district: 'ช้างม่อย',
+                postalCode: '50200',
+                postal_code: '50300',
+            }),
+        ).toBe('ตำบลศรีภูมิ 50200');
+    });
+
+    it('infers English from Latin-only names when no language is given', () => {
+        const parts = {
+            address: '99/9',
+            subDistrict: 'Si Phum',
+            district: 'Mueang Chiang Mai',
+            province: 'Chiang Mai',
+            postalCode: '50200',
+        };
+        expect(formatAddress(parts)).toBe(
+            '99/9 Si Phum Mueang Chiang Mai Chiang Mai 50200',
+        );
+        expect(formatAddress(parts, { prefix: true })).toBe(
+            '99/9 Tambon Si Phum Amphoe Mueang Chiang Mai Changwat Chiang Mai 50200',
+        );
+        // An explicit language still wins.
+        expect(formatAddress(parts, { language: 'thai' })).toBe(
+            '99/9 ตำบลSi Phum อำเภอMueang Chiang Mai จังหวัดChiang Mai 50200',
+        );
+    });
+
     it('is the inverse of splitAddress for a clean address', () => {
         // round-trips the fields, ignoring the extracted `address` remainder
         const parts = {

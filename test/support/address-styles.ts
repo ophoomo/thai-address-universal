@@ -6,6 +6,7 @@
 import {
     BANGKOK_ALIASES as BANGKOK_ALIAS_LIST,
     BANGKOK_CANONICAL_NAME,
+    BANGKOK_ENGLISH_NAME,
 } from '../../src/constants';
 import { formatAddress } from '../../src/index';
 import type { IExpanded } from '../../src/types/thai-address';
@@ -65,4 +66,20 @@ export const ENGLISH_STYLES: Record<string, AddressStyle> = {
         formatAddress(parts(row, house), { language: 'eng', separator: ', ' }),
     'comma separated with ", Thailand"': (row, house) =>
         `${formatAddress(parts(row, house), { language: 'eng', separator: ', ' })}, Thailand`,
+    'with prefixes (Tambon / Amphoe / Changwat, Khwaeng / Khet)': (
+        row,
+        house,
+    ) => formatAddress(parts(row, house), { language: 'eng', prefix: true }),
+    'with prefixes, comma separated': (row, house) =>
+        formatAddress(parts(row, house), {
+            language: 'eng',
+            prefix: true,
+            separator: ', ',
+        }),
+    'with lower-case prefixes': (row, house) =>
+        row.province === BANGKOK_ENGLISH_NAME
+            ? `${house} khwaeng ${row.sub_district} khet ${row.district} ${row.province} ${row.postal_code}`
+            : `${house} tambon ${row.sub_district} amphoe ${row.district} changwat ${row.province} ${row.postal_code}`,
+    'language inferred from the names': (row, house) =>
+        formatAddress(parts(row, house)),
 };
