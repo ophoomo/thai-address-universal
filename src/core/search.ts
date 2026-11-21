@@ -110,7 +110,10 @@ export class SearchRepository implements ISearch {
             return [];
         }
 
-        const cacheKey = `${field}:${needle}:${limit}:${this.database.name}`;
+        // Geo mode changes the rows' shape (geocode columns come and go), so it
+        // is part of the key: toggling it must never serve rows from before.
+        const geoState = this.database.getGeo() ? 'geo' : 'plain';
+        const cacheKey = `${field}:${needle}:${limit}:${this.database.name}:${geoState}`;
         const cached = this.cache.get(cacheKey);
         if (cached) {
             return cached;
