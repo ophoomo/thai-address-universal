@@ -80,6 +80,7 @@ await validateAddress({ province: 'เชียงใหม่', district: 'ห�
 // { valid: false, errors: { district: 'District "หาดใหญ่" is not in province "เชียงใหม่"' } }
 
 await validateAddress({ province: 'Phuket' }, { language: 'eng' }); // check without setEngMode
+await validateAddress(await splitAddress(text)); // snake_case fields accepted; Latin-only names -> English
 ```
 
 ### Parse free text ↔ build a string
@@ -99,7 +100,10 @@ formatAddress({
 // "99/9 แขวงลุมพินี เขตปทุมวัน กรุงเทพมหานคร 10330"  (Bangkok -> แขวง/เขต automatically)
 
 formatAddress(parts, { prefix: false, separator: ', ' });      // "99/9, ลุมพินี, ปทุมวัน, …"
-formatAddress(parts, { language: 'eng' });                     // "… Khwaeng Lumphini Khet Pathum Wan Bangkok"
+formatAddress(engParts, { language: 'eng' });                  // "99/9 Lumphini Pathum Wan Bangkok 10330" (no prefixes by default in English)
+formatAddress(engParts, { language: 'eng', prefix: true });     // "99/9 Khwaeng Lumphini Khet Pathum Wan Bangkok 10330"
+formatAddress(await splitAddress(text));                       // round-trips: accepts sub_district / postal_code; language inferred from the names
+// splitAddress parses every style formatAddress writes, English Tambon/Amphoe/Changwat/Khwaeng/Khet included.
 ```
 
 ### Search-as-you-type
